@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalles del Administrador</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="mb-4">Detalles del Administrador</h1>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 th:text="${administrador.nombre}">Nombre del Administrador</h3>
+        </div>
+        <div class="card-body">
+            <p><strong>ID:</strong> <span th:text="${administrador.id}">1</span></p>
+            <p><strong>Email:</strong> <span th:text="${administrador.email}">email@example.com</span></p>
+            <p><strong>Departamento:</strong> <span th:text="${administrador.departamento}">Departamento</span></p>
+            <p>
+                <strong>Estado:</strong>
+                <span th:text="${administrador.estadoActivo ? 'Activo' : 'Inactivo'}"
+                      th:class="${administrador.estadoActivo ? 'text-success' : 'text-danger'}">
+                        Estado
+                    </span>
+            </p>
+            <p><strong>Rol:</strong> <span th:text="${administrador.rol}">ADMIN</span></p>
+        </div>
+        <div class="card-footer">
+            <a th:href="@{/administradores/editar/{id}(id=${administrador.id})}" class="btn btn-warning">Editar</a>
+            <a href="/administradores" class="btn btn-secondary">Volver a la Lista</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
