@@ -3,31 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión</title>
+    <title>Sistema de Monitoreo de Sismos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f4f6f9;
+            background-color: #2c3e50;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
             margin: 0;
+            overflow: hidden;
+            position: relative;
         }
-        .login-container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 30px;
+
+        /* Capas del fondo dinámico */
+        .earth-background {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 400px;
+            height: 100%;
+            background-image: url('https://www.gob.mx/cms/uploads/article/main_image/118032/BLOG_SISMOS_1.jpg');
+            background-size: cover;
+            background-position: center;
+            z-index: -10;
+        }
+
+        .fault-line {
+            position: absolute;
+            width: 100%;
+            height: 5px;
+            background-color: #e74c3c;
+            opacity: 0.7;
+            z-index: -9;
+            box-shadow: 0 0 15px #e74c3c;
+        }
+        
+        /* Animación de temblor para el contenedor principal */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+            20%, 40%, 60%, 80% { transform: translateX(4px); }
+        }
+        
+        /* Animación para las líneas de falla */
+        @keyframes faultMove {
+            0% { transform: translateX(-100%) rotate(0deg); opacity: 0.4; }
+            50% { opacity: 0.7; }
+            100% { transform: translateX(100%) rotate(0deg); opacity: 0.4; }
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .login-header {
+            margin-bottom: 30px;
+        }
+        
+        .login-header h2 {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .logo-image {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-form .form-control {
+            height: 50px;
+            border-radius: 10px;
+            box-shadow: none;
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border: 1px solid #dce1e9;
+        }
+        
+        .login-form .form-control:focus {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
+        }
+        
+        .btn-login {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            width: 100%;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .login-footer {
+            margin-top: 25px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .login-footer a {
+            color: #e74c3c;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .logo-text {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .seismic-info {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 15px;
+        }
+        
+        /* Efecto de partículas */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -8;
+        }
+        
+        .seismic-meter {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .seismic-meter-title {
+            color: white;
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .seismic-meter-bar {
+            width: 100px;
+            height: 10px;
+            background: #2ecc71;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .seismic-meter-value {
+            height: 100%;
+            background: #e74c3c;
+            width: 30%;
+            transition: width 0.5s;
+        }
+        
+        .seismic-meter-reading {
+            color: white;
+            font-size: 10px;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        
+        /* Animación de onda sísmica */
+        .seismic-wave {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: transparent;
+            border: 2px solid #e74c3c;
+            opacity: 0;
+            z-index: -7;
+        }
+        
+        @keyframes wave {
+            0% { transform: scale(0); opacity: 0.7; }
+            70% { opacity: 0.3; }
+            100% { transform: scale(30); opacity: 0; }
         }
     </style>
 </head>
 <body>
+<div class="earth-background"></div>
+<div class="particles" id="particles"></div>
+
+<!-- Líneas de falla sísmicas -->
+<div class="fault-line" style="top: 20%; transform: rotate(5deg);"></div>
+<div class="fault-line" style="top: 40%; transform: rotate(-3deg);"></div>
+<div class="fault-line" style="top: 60%; transform: rotate(2deg);"></div>
+<div class="fault-line" style="top: 80%; transform: rotate(-5deg);"></div>
+
+<!-- Ondas sísmicas -->
+<div class="seismic-wave" id="wave1"></div>
+<div class="seismic-wave" id="wave2"></div>
+<div class="seismic-wave" id="wave3"></div>
+
+<!-- Medidor sísmico -->
+<div class="seismic-meter">
+    <div class="seismic-meter-title">ACTIVIDAD SÍSMICA</div>
+    <div class="seismic-meter-bar">
+        <div class="seismic-meter-value" id="seismic-value"></div>
+    </div>
+    <div class="seismic-meter-reading" id="seismic-reading">2.1 ML</div>
+</div>
+
 <div class="container">
-    <div class="login-container">
-        <h2 class="text-center mb-4">Iniciar Sesión</h2>
+    <div class="login-container" id="login-container">
+        <div class="login-header">
+            <div class="logo-text">🌍 Sistema de Monitoreo de Sismos</div>
+            <img class="logo-image" src="https://www.infobae.com/resizer/v2/J5DB2SOSAJEIDFWGYSEXI5M3IQ.jpg?auth=d9909e8a2417a69ad4e0cad8d3ac41fc87678807021f61733622b376af9af70c&smart=true&width=350&height=197&quality=85" alt="Imagen de Sismo">
+            <h2>Iniciar Sesión</h2>
+        </div>
 
         <!-- Mostrar mensaje de error si existe -->
         <div th:if="${param.error}" class="alert alert-danger">
@@ -39,44 +266,133 @@
             Has cerrado sesión exitosamente.
         </div>
 
-        <form th:action="@{/auth/login}" method="post">
-            <div class="mb-3">
-                <label for="username" class="form-label">Correo Electrónico</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+        <div class="login-form">
+            <form th:action="@{/auth/login}" method="post">
+                <div class="mb-3">
                     <input type="email" class="form-control" id="username" name="username"
-                           placeholder="Ingresa tu correo" required autofocus>
+                           placeholder="Correo electrónico" required autofocus>
                 </div>
-            </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">Contraseña</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <div class="mb-3">
                     <input type="password" class="form-control" id="password" name="password"
-                           placeholder="Ingresa tu contraseña" required>
+                           placeholder="Contraseña" required>
                 </div>
-            </div>
 
-            <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="rememberMe">
-                <label class="form-check-label" for="rememberMe">Recuérdame</label>
-            </div>
+                <button type="submit" class="btn btn-login">Ingresar al Sistema</button>
+            </form>
+        </div>
 
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary btn-lg">Iniciar Sesión</button>
-            </div>
-        </form>
-
-        <div class="text-center mt-3">
+        <div class="login-footer">
             <p>¿No tienes una cuenta? <a th:href="@{/auth/registro}">Regístrate</a></p>
-            <a href="#" class="text-muted">¿Olvidaste tu contraseña?</a>
+            <p class="seismic-info">Sistema de monitoreo para la detección y análisis de actividad sísmica</p>
         </div>
     </div>
 </div>
 
-<!-- Iconos de Bootstrap -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Función para crear partículas en el fondo
+    function createParticles() {
+        const particles = document.getElementById('particles');
+        
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.style.position = 'absolute';
+            particle.style.width = '2px';
+            particle.style.height = '2px';
+            particle.style.backgroundColor = '#e74c3c';
+            particle.style.borderRadius = '50%';
+            particle.style.boxShadow = '0 0 5px #e74c3c';
+            
+            // Posición aleatoria
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            
+            // Animación aleatoria
+            const duration = 3 + Math.random() * 5;
+            particle.style.animation = `faultMove ${duration}s linear infinite ${Math.random() * 5}s`;
+            
+            particles.appendChild(particle);
+        }
+    }
+    
+    // Función para animar las líneas de falla
+    function animateFaultLines() {
+        const faultLines = document.querySelectorAll('.fault-line');
+        
+        faultLines.forEach((line, index) => {
+            const duration = 7 + Math.random() * 5;
+            line.style.animation = `faultMove ${duration}s linear infinite ${index * 2}s`;
+        });
+    }
+    
+    // Función para generar efectos de temblor aleatorios
+    function startEarthquakeEffects() {
+        const loginContainer = document.getElementById('login-container');
+        const seismicValue = document.getElementById('seismic-value');
+        const seismicReading = document.getElementById('seismic-reading');
+        
+        // Función para iniciar un temblor
+        function triggerEarthquake() {
+            // Generar magnitud aleatoria entre 1.5 y 5.9
+            const magnitude = (Math.random() * 4.4 + 1.5).toFixed(1);
+            seismicReading.textContent = magnitude + ' ML';
+            
+            // Actualizar la barra de medición
+            const valuePercentage = (magnitude - 1.5) * 20;
+            seismicValue.style.width = valuePercentage + '%';
+            
+            // Si la magnitud es alta, aplicar el temblor
+            if (magnitude > 3.5) {
+                loginContainer.style.animation = 'shake 0.5s infinite';
+                
+                // Crear onda sísmica
+                createSeismicWave();
+                
+                // Detener el temblor después de algunos segundos
+                setTimeout(() => {
+                    loginContainer.style.animation = '';
+                }, 2000);
+            }
+            
+            // Establecer el próximo temblor
+            const nextDelay = Math.random() * 8000 + 5000; // Entre 5 y 13 segundos
+            setTimeout(triggerEarthquake, nextDelay);
+        }
+        
+        // Iniciar el primer temblor después de 3 segundos
+        setTimeout(triggerEarthquake, 3000);
+    }
+    
+    // Función para crear ondas sísmicas
+    function createSeismicWave() {
+        const waves = [
+            document.getElementById('wave1'),
+            document.getElementById('wave2'),
+            document.getElementById('wave3')
+        ];
+        
+        const randomWave = waves[Math.floor(Math.random() * waves.length)];
+        
+        // Posición aleatoria
+        randomWave.style.left = Math.random() * 80 + 10 + '%';
+        randomWave.style.top = Math.random() * 80 + 10 + '%';
+        
+        // Aplicar animación
+        randomWave.style.animation = 'wave 3s forwards';
+        
+        // Reiniciar la animación al terminar
+        setTimeout(() => {
+            randomWave.style.animation = '';
+        }, 3000);
+    }
+    
+    // Iniciar todas las animaciones cuando la página cargue
+    window.onload = function() {
+        createParticles();
+        animateFaultLines();
+        startEarthquakeEffects();
+    };
+</script>
 </body>
 </html>
