@@ -19,6 +19,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/statistics", "/map", "/alerts", "/reports", "/about").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/perfil/**").authenticated()
@@ -38,6 +39,7 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .logoutUrl("/auth/logout")
+                .logoutSuccessUrl("/")
                 .logoutSuccessUrl("/auth/login")
             );
 

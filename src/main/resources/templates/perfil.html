@@ -1,22 +1,826 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil</title>
+    <title>SismoMex - Monitoreo Sísmico de México</title>
+    
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Estilos personalizados -->
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --secondary-color: #2c3e50;
+            --light-bg: #f8f9fa;
+            --dark-bg: #121212;
+            --light-text: #f8f9fa;
+            --dark-text: #333;
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --shadow-dark: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+        
+        body.dark-mode {
+            background-color: var(--dark-bg);
+            color: var(--light-text);
+        }
+        
+        .sidebar {
+            height: 100vh;
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: -280px;
+            background-color: var(--secondary-color);
+            color: white;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: var(--shadow-light);
+            overflow-y: auto;
+        }
+        
+        body.dark-mode .sidebar {
+            background-color: #1a1a1a;
+            box-shadow: var(--shadow-dark);
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-header .logo-icon {
+            font-size: 2rem;
+            margin-right: 10px;
+        }
+        
+        .sidebar-header .brand-text {
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .sidebar-menu {
+            padding: 0;
+            list-style: none;
+        }
+        
+        .sidebar-menu li {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .sidebar-menu li:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-menu a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-menu .icon {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .content {
+            margin-left: 0;
+            padding: 20px;
+            transition: margin-left 0.3s;
+        }
+        
+        .content.sidebar-active {
+            margin-left: 280px;
+        }
+        
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .toggle-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+        
+        .theme-switch {
+            display: inline-block;
+            position: relative;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .theme-icon {
+            margin: 0 10px;
+            font-size: 20px;
+        }
+        
+        .hero-section {
+            height: 500px;
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/images/earthquake-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .wave-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+        }
+        
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" fill="%23f8f9fa" fill-opacity="1"></path></svg>');
+            background-size: 100% 100px;
+            z-index: 5;
+            animation: wave-anim 25s linear infinite;
+        }
+        
+        .wave:nth-child(2) {
+            bottom: 0;
+            animation: wave-anim 15s linear reverse infinite;
+            opacity: 0.5;
+        }
+        
+        .wave:nth-child(3) {
+            bottom: 0;
+            animation: wave-anim 20s linear infinite;
+            opacity: 0.2;
+        }
+        
+        @keyframes wave-anim {
+            0% {
+                background-position-x: 0;
+            }
+            100% {
+                background-position-x: 1000px;
+            }
+        }
+        
+        .seismic-animation {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            overflow: hidden;
+        }
+        
+        .seismic-line {
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><path d="M0,30 C50,10 100,50 150,30 C200,10 250,50 300,30 C350,10 400,50 450,30 C500,10 550,50 600,30 C650,10 700,50 750,30 C800,10 850,50 900,30 C950,10 1000,50 1050,30 C1100,10 1150,50 1200,30" stroke="%23e74c3c" fill="none" stroke-width="2"></path></svg>');
+            background-size: cover;
+            animation: seismic-anim 10s linear infinite;
+        }
+        
+        @keyframes seismic-anim {
+            0% {
+                background-position-x: 0;
+            }
+            100% {
+                background-position-x: 1200px;
+            }
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+        }
+        
+        body.dark-mode .card {
+            background-color: #2a2a2a;
+            box-shadow: var(--shadow-dark);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark-mode .card:hover {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .card-header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px;
+        }
+        
+        body.dark-mode .card-header {
+            background-color: #333;
+        }
+        
+        .info-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .news-card {
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .news-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .news-img {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        body.dark-mode .news-card {
+            background-color: #2a2a2a;
+        }
+        
+        body.dark-mode .news-card .card-body {
+            color: var(--light-text);
+        }
+        
+        .magnitude {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 50px 0;
+            margin-top: 50px;
+        }
+        
+        body.dark-mode .footer {
+            background-color: #1a1a1a;
+        }
+        
+        .footer-title {
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+            padding-left: 5px;
+        }
+        
+        .social-icons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .social-icons a {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s;
+        }
+        
+        .social-icons a:hover {
+            background-color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+        
+        /* Animación de temblor */
+        @keyframes shake {
+            0%, 100% { 
+                transform: translateX(0); 
+            }
+            10%, 30%, 50%, 70%, 90% { 
+                transform: translateX(-5px); 
+            }
+            20%, 40%, 60%, 80% { 
+                transform: translateX(5px); 
+            }
+        }
+        
+        .shake-animation {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+    </style>
 </head>
 <body>
-<div class="container mt-5">
-    <h1 class="text-center">Perfil de Usuario</h1>
-    <div class="card mx-auto" style="max-width: 400px;">
-        <div class="card-body">
-            <p><strong>Nombre:</strong> <span th:text="${usuario.nombre}"></span></p>
-            <p><strong>Email:</strong> <span th:text="${usuario.email}"></span></p>
-            <a th:href="@{/auth/logout}" class="btn btn-danger">Cerrar Sesión</a>
+    <!-- Botón Toggle para el Sidebar -->
+    <button class="toggle-btn" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-globe-americas logo-icon"></i>
+            <h4 class="brand-text">SismoMex</h4>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li>
+                <a href="/">
+                    <i class="fas fa-home icon"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+            <li>
+                <a href="/map">
+                    <i class="fas fa-map-marked-alt icon"></i>
+                    <span>Mapa de Sismos</span>
+                </a>
+            </li>
+            <li>
+                <a href="/alerts">
+                    <i class="fas fa-bell icon"></i>
+                    <span>Alertas Sísmicas</span>
+                </a>
+            </li>
+            <li>
+                <a href="/reports">
+                    <i class="fas fa-chart-line icon"></i>
+                    <span>Informes y Estadísticas</span>
+                </a>
+            </li>
+            <li>
+                <a href="/auth/login">
+                    <i class="fas fa-user-shield icon"></i>
+                    <span>Acceso Administrador</span>
+                </a>
+            </li>
+            <li>
+                <a href="/about">
+                    <i class="fas fa-info-circle icon"></i>
+                    <span>Acerca de</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <p>Cambiar tema</p>
+            <div class="theme-switch-wrapper">
+                <i class="fas fa-sun theme-icon"></i>
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeSwitch">
+                    <span class="slider"></span>
+                </label>
+                <i class="fas fa-moon theme-icon"></i>
+            </div>
+            <p class="mt-3">© 2025 SismoMex</p>
         </div>
     </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Contenido principal -->
+    <div class="content" id="content">
+        <!-- Sección Hero -->
+        <section class="hero-section">
+            <div class="container text-center">
+                <h1 class="display-4 fw-bold mb-4">Monitoreo Sísmico de México</h1>
+                <p class="lead mb-5">Sistema de detección, análisis y visualización de actividad sísmica en tiempo real</p>
+                <a href="/map" class="btn btn-primary btn-lg px-5 py-3">
+                    <i class="fas fa-map-marked-alt me-2"></i>Ver Mapa de Sismos
+                </a>
+            </div>
+            <div class="seismic-animation">
+                <div class="seismic-line"></div>
+            </div>
+            <div class="wave-container">
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+            </div>
+        </section>
+
+        <!-- Sección Información -->
+        <section class="py-5">
+            <div class="container">
+                <h2 class="text-center mb-5">Sistema de Monitoreo de Sismos</h2>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card text-center p-4">
+                            <div class="card-body">
+                                <i class="fas fa-search-location info-icon"></i>
+                                <h3>Detección Precisa</h3>
+                                <p>Utilizamos algoritmos avanzados de trilateración para identificar con precisión las zonas de ocurrencia de eventos sísmicos en México.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center p-4">
+                            <div class="card-body">
+                                <i class="fas fa-database info-icon"></i>
+                                <h3>Datos en Tiempo Real</h3>
+                                <p>Integración con el Servicio Sismológico Nacional (SSN) para proporcionar información actualizada sobre la actividad sísmica en todo el país.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center p-4">
+                            <div class="card-body">
+                                <i class="fas fa-chart-network info-icon"></i>
+                                <h3>Grafos de Conocimiento</h3>
+                                <p>Visualización avanzada de relaciones entre eventos sísmicos, factores geológicos y patrones históricos para mejor comprensión y análisis.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Sismos Recientes -->
+        <section class="py-5 bg-light">
+            <div class="container">
+                <h2 class="text-center mb-5">Sismos Recientes en México</h2>
+                <div class="row">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card news-card">
+                            <img src="/images/sismo1.jpg" class="news-img" alt="Sismo en Oaxaca">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="magnitude">5.2</span>
+                                    <h5 class="mb-0">Oaxaca, México</h5>
+                                </div>
+                                <p class="text-muted">15 de marzo, 2025 - 08:22:45</p>
+                                <p>Un sismo de magnitud 5.2 sacudió la costa de Oaxaca esta mañana, sin reportes de daños graves. El epicentro fue localizado a 23 km al sur de Puerto Escondido.</p>
+                                <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card news-card">
+                            <img src="/images/sismo2.jpg" class="news-img" alt="Sismo en Guerrero">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="magnitude">4.7</span>
+                                    <h5 class="mb-0">Guerrero, México</h5>
+                                </div>
+                                <p class="text-muted">10 de marzo, 2025 - 15:45:32</p>
+                                <p>Se registró un sismo de magnitud 4.7 con epicentro a 15 km al noroeste de Acapulco. Las autoridades activaron protocolos de revisión en edificios públicos y escuelas.</p>
+                                <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card news-card">
+                            <img src="/images/sismo3.jpg" class="news-img" alt="Sismo en Chiapas">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="magnitude">6.1</span>
+                                    <h5 class="mb-0">Chiapas, México</h5>
+                                </div>
+                                <p class="text-muted">2 de marzo, 2025 - 02:10:17</p>
+                                <p>Un fuerte sismo de magnitud 6.1 se sintió en varias localidades de Chiapas. El movimiento activó el sistema de alerta sísmica en la Ciudad de México.</p>
+                                <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="/reports" class="btn btn-primary">Ver todos los sismos</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Mapa -->
+        <section class="py-5">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <h2 class="mb-4">Mapa Interactivo de Sismos</h2>
+                        <p>Visualiza en tiempo real los eventos sísmicos ocurridos en México y sus alrededores. Nuestro mapa interactivo te permite:</p>
+                        <ul class="list-group list-group-flush mb-4">
+                            <li class="list-group-item bg-transparent"><i class="fas fa-check-circle text-primary me-2"></i> Filtrar por magnitud, profundidad y fecha</li>
+                            <li class="list-group-item bg-transparent"><i class="fas fa-check-circle text-primary me-2"></i> Ver detalles técnicos de cada evento</li>
+                            <li class="list-group-item bg-transparent"><i class="fas fa-check-circle text-primary me-2"></i> Analizar zonas de mayor actividad sísmica</li>
+                            <li class="list-group-item bg-transparent"><i class="fas fa-check-circle text-primary me-2"></i> Descargar datos para investigación</li>
+                        </ul>
+                        <a href="/map" class="btn btn-primary btn-lg">Explorar Mapa</a>
+                    </div>
+                    <div class="col-lg-6 mt-4 mt-lg-0">
+                        <div class="card">
+                            <img src="/images/map-preview.jpg" alt="Vista previa del mapa" class="img-fluid rounded">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Estadísticas -->
+        <section class="py-5 bg-light">
+            <div class="container">
+                <h2 class="text-center mb-5">Estadísticas de Actividad Sísmica</h2>
+                <div class="row text-center">
+                    <div class="col-md-3 col-6 mb-4">
+                        <div class="card p-3">
+                            <h3 class="display-4 text-primary">127</h3>
+                            <p>Sismos en el último mes</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-4">
+                        <div class="card p-3">
+                            <h3 class="display-4 text-primary">5.2</h3>
+                            <p>Magnitud máxima registrada</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-4">
+                        <div class="card p-3">
+                            <h3 class="display-4 text-primary">24/7</h3>
+                            <p>Monitoreo continuo</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-4">
+                        <div class="card p-3">
+                            <h3 class="display-4 text-primary">32</h3>
+                            <p>Estados monitoreados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-4 mb-4 mb-lg-0">
+                        <h5 class="footer-title">SismoMex</h5>
+                        <p>Sistema de monitoreo y análisis sísmico basado en datos del Servicio Sismológico Nacional (SSN) y otras fuentes oficiales.</p>
+                        <div class="social-icons mt-3">
+                            <a href="#"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                            <a href="#"><i class="fab fa-instagram"></i></a>
+                            <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                        <h5 class="footer-title">Enlaces</h5>
+                        <ul class="footer-links">
+                            <li><a href="/">Inicio</a></li>
+                            <li><a href="/map">Mapa de Sismos</a></li>
+                            <li><a href="/alerts">Alertas</a></li>
+                            <li><a href="/reports">Informes</a></li>
+                            <li><a href="/auth/login">Administrador</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                        <h5 class="footer-title">Recursos</h5>
+                        <ul class="footer-links">
+                            <li><a href="#">API</a></li>
+                            <li><a href="#">Documentación</a></li>
+                            <li><a href="#">Datos históricos</a></li>
+                            <li><a href="#">Preguntas frecuentes</a></li>
+                            <li><a href="#">Soporte</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-4 col-md-4">
+                        <h5 class="footer-title">Contacto</h5>
+                        <p><i class="fas fa-map-marker-alt me-2"></i> Av. Universidad 3000, CU, 04510 CDMX</p>
+                        <p><i class="fas fa-phone me-2"></i> (55) 1234-5678</p>
+                        <p><i class="fas fa-envelope me-2"></i> contacto@sismomex.mx</p>
+                    </div>
+                </div>
+                <hr class="mt-4 mb-4" style="border-color: rgba(255, 255, 255, 0.1);">
+                <div class="text-center">
+                    <p class="mb-0">&copy; 2025 SismoMex. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle Sidebar
+        const sidebar = document.getElementById('sidebar');
+        const content = document.getElementById('content');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            content.classList.toggle('sidebar-active');
+        });
+        
+        // Theme Switch
+        const themeSwitch = document.getElementById('themeSwitch');
+        
+        // Check for saved theme preference or default to light
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeSwitch.checked = true;
+        }
+        
+        // Toggle theme
+        themeSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+        
+        // Simular efecto de temblor
+        function simulateEarthquake() {
+            const magnitudes = [3.2, 3.5, 3.8, 4.1, 4.5, 5.0, 5.5];
+            
+            // Mostrar un temblor cada 30-60 segundos con probabilidad aleatoria
+            setInterval(() => {
+                // Solo 20% de probabilidad de que ocurra un temblor
+                if (Math.random() < 0.20) {
+                    // Seleccionar una magnitud aleatoria
+                    const magnitude = magnitudes[Math.floor(Math.random() * magnitudes.length)];
+                    
+                    // Para magnitudes altas, aplicar efecto de temblor
+                    if (magnitude >= 4.5) {
+                        document.body.classList.add('shake-animation');
+                        
+                        // Mostrar notificación de temblor
+                        showEarthquakeAlert(magnitude);
+                        
+                        // Quitar la clase después de 1 segundo
+                        setTimeout(() => {
+                            document.body.classList.remove('shake-animation');
+                        }, 1000);
+                    }
+                }
+            }, Math.random() * 30000 + 30000); // Entre 30 y 60 segundos
+        }
+        
+        // Mostrar alerta de temblor
+        function showEarthquakeAlert(magnitude) {
+            // Crear elemento de alerta
+            const alert = document.createElement('div');
+            alert.className = 'position-fixed bottom-0 end-0 p-3';
+            alert.style.zIndex = '9999';
+            
+            const locations = ['Oaxaca', 'Guerrero', 'Chiapas', 'Michoacán', 'Jalisco', 'Ciudad de México'];
+            const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+            
+            alert.innerHTML = `
+                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header bg-danger text-white">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong class="me-auto">Alerta Sísmica</strong>
+                        <small>Ahora</small>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        <div class="d-flex align-items-center">
+                            <span class="magnitude me-2">${magnitude}</span>
+                            <div>
+                                Se detectó un sismo de magnitud ${magnitude} cerca de ${randomLocation}.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Añadir al body
+            document.body.appendChild(alert);
+            
+            // Quitar después de 5 segundos
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+        
+        // Iniciar simulación de temblores
+        document.addEventListener('DOMContentLoaded', () => {
+            simulateEarthquake();
+        });
+    </script>
 </body>
 </html>

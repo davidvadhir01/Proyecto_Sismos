@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas Sísmicas por Estado - SismoMex</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Estilos personalizados -->
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --secondary-color: #2c3e50;
+            --light-bg: #f8f9fa;
+            --dark-bg: #121212;
+            --light-text: #f8f9fa;
+            --dark-text: #333;
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --shadow-dark: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+        
+        body.dark-mode {
+            background-color: var(--dark-bg);
+            color: var(--light-text);
+        }
+        
+        .sidebar {
+            height: 100vh;
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: -280px;
+            background-color: var(--secondary-color);
+            color: white;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: var(--shadow-light);
+            overflow-y: auto;
+        }
+        
+        body.dark-mode .sidebar {
+            background-color: #1a1a1a;
+            box-shadow: var(--shadow-dark);
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-header .logo-icon {
+            font-size: 2rem;
+            margin-right: 10px;
+        }
+        
+        .sidebar-header .brand-text {
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .sidebar-menu {
+            padding: 0;
+            list-style: none;
+        }
+        
+        .sidebar-menu li {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .sidebar-menu li:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-menu a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-menu .icon {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .content {
+            margin-left: 0;
+            padding: 20px;
+            transition: margin-left 0.3s;
+        }
+        
+        .content.sidebar-active {
+            margin-left: 280px;
+        }
+        
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1100;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .toggle-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+        
+        .theme-switch {
+            display: inline-block;
+            position: relative;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .theme-icon {
+            margin: 0 10px;
+            font-size: 20px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        body.dark-mode .card {
+            background-color: #2a2a2a;
+            color: var(--light-text);
+            box-shadow: var(--shadow-dark);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px;
+            border-bottom: none;
+        }
+        
+        body.dark-mode .card-header {
+            background-color: #333;
+        }
+        
+        .state-card {
+            background-size: cover;
+            background-position: center;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            color: white;
+            text-align: center;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .state-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+        
+        .state-card:hover::before {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        
+        .state-content {
+            position: relative;
+            z-index: 2;
+            padding: 20px;
+            width: 100%;
+        }
+        
+        .state-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .state-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+        }
+        
+        .footer {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 50px 0;
+            margin-top: 50px;
+        }
+        
+        body.dark-mode .footer {
+            background-color: #1a1a1a;
+        }
+        
+        .risk-level {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .risk-high {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .risk-medium {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .risk-low {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        /* Filtros */
+        .filters {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-light);
+        }
+        
+        body.dark-mode .filters {
+            background-color: #2a2a2a;
+            box-shadow: var(--shadow-dark);
+        }
+        
+        /* Gráficos */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        /* Mapa de México con estados */
+        .mexico-map-container {
+            position: relative;
+            height: 500px;
+            margin: 30px 0;
+        }
+        
+        .mexico-map {
+            width: 100%;
+            height: 100%;
+            background-image: url('/images/mexico-map-outline.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+        
+        .state-hotspot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+        
+        .state-hotspot:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        
+        .risk-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Botón Toggle para el Sidebar -->
+    <button class="toggle-btn" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-globe-americas logo-icon"></i>
+            <h4 class="brand-text">SismoMex</h4>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li>
+                <a href="/">
+                    <i class="fas fa-home icon"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+            <li>
+                <a href="/map">
+                    <i class="fas fa-map-marked-alt icon"></i>
+                    <span>Mapa de Sismos</span>
+                </a>
+            </li>
+            <li>
+                <a href="/alerts">
+                    <i class="fas fa-bell icon"></i>
+                    <span>Alertas Sísmicas</span>
+                </a>
+            </li>
+            <li>
+                <a href="/statistics">
+                    <i class="fas fa-chart-bar icon"></i>
+                    <span>Estadísticas</span>
+                </a>
+            </li>
+            <li>
+                <a href="/reports">
+                    <i class="fas fa-file-alt icon"></i>
+                    <span>Informes</span>
+                </a>
+            </li>
+            <li>
+                <a href="/auth/login">
+                    <i class="fas fa-user-shield icon"></i>
+                    <span>Acceso Administrador</span>
+                </a>
+            </li>
+            <li>
+                <a href="/about">
+                    <i class="fas fa-info-circle icon"></i>
+                    <span>Acerca de</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <p>Cambiar tema</p>
+            <div class="theme-switch-wrapper">
+                <i class="fas fa-sun theme-icon"></i>
+                <label class="theme-switch">
+                    <input type="checkbox" id="themeSwitch">
+                    <span class="slider"></span>
+                </label>
+                <i class="fas fa-moon theme-icon"></i>
+            </div>
+            <p class="mt-3">© 2025 SismoMex</p>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="content" id="content">
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h1 class="mb-4">Estadísticas Sísmicas por Estado</h1>
+                    <p class="lead">Análisis detallado de la actividad sísmica en México, mostrando estadísticas por estado y zonas de riesgo.</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <select class="form-select d-inline-block w-auto">
+                        <option>Último mes</option>
+                        <option>Últimos 3 meses</option>
+                        <option>Últimos 6 meses</option>
+                        <option>Último año</option>
+                        <option>Todo el historial</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Filtros -->
+            <div class="filters">
+                <div class="row">
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <label class="form-label">Magnitud mínima</label>
+                        <select class="form-select">
+                            <option>Cualquiera</option>
+                            <option>3.0+</option>
+                            <option>4.0+</option>
+                            <option>5.0+</option>
+                            <option>6.0+</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <label class="form-label">Nivel de riesgo</label>
+                        <select class="form-select">
+                            <option>Todos</option>
+                            <option>Alto</option>
+                            <option>Medio</option>
+                            <option>Bajo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <label class="form-label">Región</label>
+                        <select class="form-select">
+                            <option>Todas</option>
+                            <option>Norte</option>
+                            <option>Centro</option>
+                            <option>Sur</option>
+                            <option>Costa Pacífico</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button class="btn btn-primary w-100">Aplicar filtros</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Resumen general -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <h3 class="display-4 text-primary">345</h3>
+                            <p>Total de sismos registrados</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <h3 class="display-4 text-primary">6.1</h3>
+                            <p>Mayor magnitud registrada</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <h3 class="display-4 text-primary">4.2</h3>
+                            <p>Magnitud promedio</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <h3 class="display-4 text-primary">8</h3>
+                            <p>Estados con alto riesgo</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mapa de México con niveles de riesgo -->
+            <div class="card mb-5">
+                <div class="card-header">
+                    <h4>Mapa de riesgo sísmico por estado</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mexico-map-container">
+                        <div class="mexico-map">
+                            <!-- Aquí irían los puntos para cada estado, estos son solo ejemplos -->
+                            <div class="state-hotspot" style="top: 45%; left: 30%; background-color: #e74c3c;" data-bs-toggle="tooltip" title="Jalisco: Alto riesgo - 42 sismos"></div>
+                            <div class="state-hotspot" style="top: 55%; left: 35%; background-color: #e74c3c;" data-bs-toggle="tooltip" title="Michoacán: Alto riesgo - 38 sismos"></div>
+                            <div class="state-hotspot" style="top: 60%; left: 40%; background-color: #e74c3c;" data-bs-toggle="tooltip" title="Guerrero: Alto riesgo - 56 sismos"></div>
+                            <div class="state-hotspot" style="top: 65%; left: 45%; background-color: #e74c3c;" data-bs-toggle="tooltip" title="Oaxaca: Alto riesgo - 68 sismos"></div>
+                            <div class="state-hotspot" style="top: 65%; left: 55%; background-color: #e74c3c;" data-bs-toggle="tooltip" title="Chiapas: Alto riesgo - 51 sismos"></div>
+                            
+                            <div class="state-hotspot" style="top: 50%; left: 45%; background-color: #f39c12;" data-bs-toggle="tooltip" title="Ciudad de México: Riesgo medio - 12 sismos"></div>
+                            <div class="state-hotspot" style="top: 45%; left: 50%; background-color: #f39c12;" data-bs-toggle="tooltip" title="Puebla: Riesgo medio - 15 sismos"></div>
+                            <div class="state-hotspot" style="top: 55%; left: 50%; background-color: #f39c12;" data-bs-toggle="tooltip" title="Veracruz: Riesgo medio - 18 sismos"></div>
+                            
+                            <div class="state-hotspot" style="top: 30%; left: 45%; background-color: #27ae60;" data-bs-toggle="tooltip" title="Zacatecas: Bajo riesgo - 3 sismos"></div>
+                            <div class="state-hotspot" style="top: 70%; left: 70%; background-color: #27ae60;" data-bs-toggle="tooltip" title="Yucatán: Bajo riesgo - 0 sismos"></div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center mt-3">
+                        <div class="me-4">
+                            <span class="badge bg-danger p-2">&nbsp;</span>
+                            <span class="ms-1">Alto riesgo</span>
+                        </div>
+                        <div class="me-4">
+                            <span class="badge bg-warning p-2">&nbsp;</span>
+                            <span class="ms-1">Riesgo medio</span>
+                        </div>
+                        <div>
+                            <span class="badge bg-success p-2">&nbsp;</span>
+                            <span class="ms-1">Bajo riesgo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estados con mayor actividad sísmica -->
+            <h2 class="mt-5 mb-4">Estados con mayor actividad sísmica</h2>
+            <div class="row">
+                <!-- Oaxaca -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="state-card" style="background-image: url('/images/oaxaca.jpg');">
+                        <div class="state-content">
+                            <div class="state-title">Oaxaca</div>
+                            <span class="risk-level risk-high mb-2">Alto riesgo</span>
+                            <div class="state-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">68</div>
+                                    <div class="stat-label">Sismos</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">5.8</div>
+                                    <div class="stat-label">Máx. magnitud</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">12</div>
+                                    <div class="stat-label">Último mes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Guerrero -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="state-card" style="background-image: url('/images/guerrero.jpg');">
+                        <div class="state-content">
+                            <div class="state-title">Guerrero</div>
+                            <span class="risk-level risk-high mb-2">Alto riesgo</span>
+                            <div class="state-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">56</div>
+                                    <div class="stat-label">Sismos</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">6.1</div>
+                                    <div class="stat-label">Máx. magnitud</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">9</div>
+                                    <div class="stat-label">Último mes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chiapas -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="state-card" style="background-image: url('/images/chiapas.jpg');">
+                        <div class="state-content">
+                            <div class="state-title">Chiapas</div>
+                            <span class="risk-level risk-high mb-2">Alto riesgo</span>
+                            <div class="state-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">51</div>
+                                    <div class="stat-label">Sismos</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">5.5</div>
+                                    <div class="stat-label">Máx. magnitud</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">8</div>
+                                    <div class="stat-label">Último mes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Michoacán -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="state-card" style="background-image: url('/images/michoacan.jpg');">
+                        <div class="state-content">
+                            <div class="state-title">Michoacán</div>
+                            <span class="risk-level risk-high mb-2">Alto riesgo</span>
+                            <div class="state-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">38</div>
+                                    <div class="stat-label">Sismos</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">4.9</div>
+                                    <div class="stat-label">Máx. magnitud</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">6</div>
+                                    <div class="stat-label">Último mes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Jalisco -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="state-card" style="background-image: url('/images/jalisco.jpg');">
+                        <div class="state-content">
+                            <div class="state-title">Jalisco</div>
+                            <span class="risk-level risk-high mb-2">Alto riesgo</span>
+                            <div class="state-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">42</div>
+                                    <div class="stat-label">Sismos</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">5.2</div>
+                                    <div class="stat-label">Máx. magnitud</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">7</div>
+                                    <div class="stat-label">Último mes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Colima -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="state-card" style="background-image: url('/images/colima.jpg');">
+                        <div class="state-content">
+                            <div class="state-title">Colima</div>
+                            <span class="risk-level risk-high mb-2">Alto riesgo</span>
+                            <div class="state-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">35</div>
+                                    <div class="stat-label">Sismos</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">4.7</div>
+                                    <div class="stat-label">Máx. magnitud</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">5</div>
+                                    <div class="stat-label">Último mes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gráficos de estadísticas -->
+            <h2 class="mt-5 mb-4">Análisis de datos sísmicos</h2>
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5>Distribución de sismos por magnitud</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="magnitudeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5>Actividad sísmica mensual</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5>Distribución por profundida
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="depthChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5>Comparativa por estado</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="stateChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tabla de datos -->
+                <h2 class="mt-5 mb-4">Datos detallados por estado</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Estado</th>
+                                        <th>Total sismos</th>
+                                        <th>Magnitud máxima</th>
+                                        <th>Magnitud promedio</th>
+                                        <th>Profundidad promedio</th>
+                                        <th>Nivel de riesgo</th>
+                                        <th>Último evento</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Oaxaca</td>
+                                        <td>68</td>
+                                        <td>5.8</td>
+                                        <td>4.3</td>
+                                        <td>16 km</td>
+                                        <td><span class="badge bg-danger">Alto</span></td>
+                                        <td>25/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Guerrero</td>
+                                        <td>56</td>
+                                        <td>6.1</td>
+                                        <td>4.5</td>
+                                        <td>12 km</td>
+                                        <td><span class="badge bg-danger">Alto</span></td>
+                                        <td>22/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Chiapas</td>
+                                        <td>51</td>
+                                        <td>5.5</td>
+                                        <td>4.2</td>
+                                        <td>18 km</td>
+                                        <td><span class="badge bg-danger">Alto</span></td>
+                                        <td>24/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Jalisco</td>
+                                        <td>42</td>
+                                        <td>5.2</td>
+                                        <td>4.1</td>
+                                        <td>15 km</td>
+                                        <td><span class="badge bg-danger">Alto</span></td>
+                                        <td>20/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Michoacán</td>
+                                        <td>38</td>
+                                        <td>4.9</td>
+                                        <td>4.0</td>
+                                        <td>14 km</td>
+                                        <td><span class="badge bg-danger">Alto</span></td>
+                                        <td>19/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Colima</td>
+                                        <td>35</td>
+                                        <td>4.7</td>
+                                        <td>3.9</td>
+                                        <td>13 km</td>
+                                        <td><span class="badge bg-danger">Alto</span></td>
+                                        <td>18/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Veracruz</td>
+                                        <td>18</td>
+                                        <td>4.5</td>
+                                        <td>3.7</td>
+                                        <td>20 km</td>
+                                        <td><span class="badge bg-warning">Medio</span></td>
+                                        <td>15/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Puebla</td>
+                                        <td>15</td>
+                                        <td>4.3</td>
+                                        <td>3.5</td>
+                                        <td>22 km</td>
+                                        <td><span class="badge bg-warning">Medio</span></td>
+                                        <td>10/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Ciudad de México</td>
+                                        <td>12</td>
+                                        <td>4.1</td>
+                                        <td>3.2</td>
+                                        <td>25 km</td>
+                                        <td><span class="badge bg-warning">Medio</span></td>
+                                        <td>08/03/2025</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Zacatecas</td>
+                                        <td>3</td>
+                                        <td>3.8</td>
+                                        <td>3.1</td>
+                                        <td>28 km</td>
+                                        <td><span class="badge bg-success">Bajo</span></td>
+                                        <td>01/03/2025</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <footer class="footer mt-5">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-lg-4 mb-4 mb-lg-0">
+                                <h5>SismoMex</h5>
+                                <p>Sistema de monitoreo y análisis sísmico basado en datos del Servicio Sismológico Nacional (SSN) y otras fuentes oficiales.</p>
+                                <div class="social-icons mt-3">
+                                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                                    <a href="#"><i class="fab fa-twitter"></i></a>
+                                    <a href="#"><i class="fab fa-instagram"></i></a>
+                                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                                <h5>Enlaces</h5>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2"><a href="/" class="text-white-50">Inicio</a></li>
+                                    <li class="mb-2"><a href="/map" class="text-white-50">Mapa de Sismos</a></li>
+                                    <li class="mb-2"><a href="/alerts" class="text-white-50">Alertas</a></li>
+                                    <li class="mb-2"><a href="/statistics" class="text-white-50">Estadísticas</a></li>
+                                    <li class="mb-2"><a href="/reports" class="text-white-50">Informes</a></li>
+                                </ul>
+                            </div>
+                            <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                                <h5>Recursos</h5>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2"><a href="#" class="text-white-50">API</a></li>
+                                    <li class="mb-2"><a href="#" class="text-white-50">Documentación</a></li>
+                                    <li class="mb-2"><a href="#" class="text-white-50">Datos históricos</a></li>
+                                    <li class="mb-2"><a href="#" class="text-white-50">Preguntas frecuentes</a></li>
+                                    <li class="mb-2"><a href="#" class="text-white-50">Soporte</a></li>
+                                </ul>
+                            </div>
+                            <div class="col-lg-4 col-md-4">
+                                <h5>Contacto</h5>
+                                <p class="mb-2"><i class="fas fa-map-marker-alt me-2"></i> Av. Universidad 3000, CU, 04510 CDMX</p>
+                                <p class="mb-2"><i class="fas fa-phone me-2"></i> (55) 1234-5678</p>
+                                <p class="mb-2"><i class="fas fa-envelope me-2"></i> contacto@sismomex.mx</p>
+                            </div>
+                        </div>
+                        <hr class="my-4" style="border-color: rgba(255, 255, 255, 0.1);">
+                        <div class="text-center">
+                            <p class="mb-0">© 2025 SismoMex. Todos los derechos reservados.</p>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            // Toggle Sidebar
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                content.classList.toggle('sidebar-active');
+            });
+            
+            // Theme Switch
+            const themeSwitch = document.getElementById('themeSwitch');
+            
+            // Check for saved theme preference or default to light
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeSwitch.checked = true;
+            }
+            
+            // Toggle theme
+            themeSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    document.body.classList.add('dark-mode');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('theme', 'light');
+                }
+                
+                // Actualizar los gráficos cuando cambia el tema
+                updateChartsTheme();
+            });
+            
+            // Inicializar tooltips de Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+            
+            // Configuración de colores para los gráficos
+            function getChartColors() {
+                const isDark = document.body.classList.contains('dark-mode');
+                return {
+                    backgroundColor: isDark ? 'rgba(231, 76, 60, 0.7)' : 'rgba(231, 76, 60, 0.7)',
+                    borderColor: isDark ? '#e74c3c' : '#e74c3c',
+                    textColor: isDark ? '#f8f9fa' : '#333',
+                    gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                };
+            }
+            
+            // Crear gráficos
+            let magnitudeChart, monthlyChart, depthChart, stateChart;
+            
+            function createCharts() {
+                const colors = getChartColors();
+                
+                // Gráfico de distribución por magnitud
+                const magnitudeCtx = document.getElementById('magnitudeChart').getContext('2d');
+                magnitudeChart = new Chart(magnitudeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['1.0-2.0', '2.1-3.0', '3.1-4.0', '4.1-5.0', '5.1-6.0', '6.1+'],
+                        datasets: [{
+                            label: 'Cantidad de sismos',
+                            data: [12, 45, 128, 110, 42, 8],
+                            backgroundColor: colors.backgroundColor,
+                            borderColor: colors.borderColor,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: colors.textColor
+                                },
+                                grid: {
+                                    color: colors.gridColor
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: colors.textColor
+                                },
+                                grid: {
+                                    color: colors.gridColor
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: colors.textColor
+                                }
+                            },
+                            title: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+                
+                // Gráfico de actividad mensual
+                const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+                monthlyChart = new Chart(monthlyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                        datasets: [{
+                            label: 'Sismos registrados',
+                            data: [28, 32, 42, 35, 30, 25, 22, 29, 38, 40, 35, 34],
+                            backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                            borderColor: colors.borderColor,
+                            borderWidth: 2,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: colors.textColor
+                                },
+                                grid: {
+                                    color: colors.gridColor
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: colors.textColor
+                                },
+                                grid: {
+                                    color: colors.gridColor
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: colors.textColor
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Gráfico de distribución por profundidad
+                const depthCtx = document.getElementById('depthChart').getContext('2d');
+                depthChart = new Chart(depthCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['0-10 km', '11-20 km', '21-30 km', '31-50 km', '50+ km'],
+                        datasets: [{
+                            data: [95, 120, 78, 42, 10],
+                            backgroundColor: [
+                                '#e74c3c',
+                                '#e67e22',
+                                '#f39c12',
+                                '#27ae60',
+                                '#2980b9'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: colors.textColor
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Gráfico de comparativa por estado
+                const stateCtx = document.getElementById('stateChart').getContext('2d');
+                stateChart = new Chart(stateCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Oaxaca', 'Guerrero', 'Chiapas', 'Jalisco', 'Michoacán', 'Colima', 'Veracruz', 'Puebla'],
+                        datasets: [{
+                            label: 'Número de sismos',
+                            data: [68, 56, 51, 42, 38, 35, 18, 15],
+                            backgroundColor: colors.backgroundColor,
+                            borderColor: colors.borderColor,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: colors.textColor
+                                },
+                                grid: {
+                                    color: colors.gridColor
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    color: colors.textColor
+                                },
+                                grid: {
+                                    color: colors.gridColor
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: colors.textColor
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Actualizar tema de los gráficos
+            function updateChartsTheme() {
+                if (magnitudeChart && monthlyChart && depthChart && stateChart) {
+                    const colors = getChartColors();
+                    
+                    // Actualizar colores del texto y cuadrícula
+                    [magnitudeChart, monthlyChart, stateChart].forEach(chart => {
+                        chart.options.scales.x.ticks.color = colors.textColor;
+                        chart.options.scales.y.ticks.color = colors.textColor;
+                        chart.options.scales.x.grid.color = colors.gridColor;
+                        chart.options.scales.y.grid.color = colors.gridColor;
+                        chart.options.plugins.legend.labels.color = colors.textColor;
+                        chart.update();
+                    });
+                    
+                    // Actualizar leyenda del gráfico de pastel
+                    depthChart.options.plugins.legend.labels.color = colors.textColor;
+                    depthChart.update();
+                }
+            }
+            
+            // Inicializar gráficos cuando se carga la página
+            document.addEventListener('DOMContentLoaded', function() {
+                createCharts();
+            });
+        </script>
+    </body>
+    </html>

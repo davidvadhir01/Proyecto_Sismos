@@ -16,7 +16,7 @@ public class HomeController {
 
     @GetMapping("/")
     public String home(Model model) {
-        model.addAttribute("mensaje", "¡Bienvenido! Usa el formulario para registrarte.");
+        model.addAttribute("mensaje", "¡Bienvenido al Sistema de Monitoreo Sísmico de México!");
         return "index"; // Renderiza index.html
     }
 
@@ -26,5 +26,30 @@ public class HomeController {
         Usuario usuario = usuarioService.buscarPorEmail(email).orElseThrow();
         model.addAttribute("usuario", usuario);
         return "perfil"; // Renderiza perfil.html
+    }
+    
+    @GetMapping("/statistics")
+    public String statistics() {
+        return "statistics"; // Renderiza statistics.html
+    }
+    
+    @GetMapping("/map")
+    public String map() {
+        return "map"; // Renderiza map.html
+    }
+    
+    @GetMapping("/alerts")
+    public String alerts() {
+        return "alerts"; // Renderiza alerts.html
+    }
+    
+    @GetMapping("/reports")
+    public String reports() {
+        return "reports"; // Renderiza reports.html
+    }
+    
+    @GetMapping("/about")
+    public String about() {
+        return "about"; // Renderiza about.html
     }
 }

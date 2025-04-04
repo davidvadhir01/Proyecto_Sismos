@@ -1,0 +1,2 @@
+Este es un mensaje secreto que será cifrado con DES y codificado en base64.
+La criptografía es fascinante y esencial para la seguridad informática.
