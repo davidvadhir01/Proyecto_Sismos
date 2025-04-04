@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.Authentication;
 
 @Controller
 @RequestMapping("/auth")
@@ -71,4 +72,15 @@ public class AuthController {
     public String logout() {
         return "redirect:/auth/login";
     }
+
+    @GetMapping("/login-success")
+    public String loginSuccess(Authentication authentication) {
+        if (authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            return "redirect:/admin/perfil";
+        }
+        return "redirect:/perfil";
+    }
+
+    
 }
