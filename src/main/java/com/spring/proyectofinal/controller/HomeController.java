@@ -35,7 +35,7 @@ public class HomeController {
     
     @GetMapping("/map")
     public String map() {
-        return "map"; // Renderiza map.html
+        return "map"; // Renderiza mapa.html
     }
     
     @GetMapping("/alerts")
