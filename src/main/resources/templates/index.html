@@ -11,7 +11,7 @@
     <!-- Font Awesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Estilos personalizados -->
+    <!-- Estilos personalizados (MANTENER TODOS LOS ORIGINALES) -->
     <style>
         :root {
             --primary-color: #e74c3c;
@@ -111,6 +111,45 @@
             margin-right: 10px;
             width: 20px;
             text-align: center;
+        }
+        
+        .sidebar-submenu {
+            list-style: none;
+            padding: 0;
+            margin-left: 30px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .sidebar-submenu.show {
+            display: block;
+        }
+        
+        .sidebar-submenu li {
+            padding: 8px 0;
+            border-bottom: none;
+        }
+        
+        .sidebar-submenu a {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+        
+        .sidebar-submenu a:hover {
+            color: white;
+            padding-left: 10px;
+        }
+        
+        .submenu-toggle::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            float: right;
+            transition: transform 0.3s;
+        }
+        
+        .submenu-toggle.active::after {
+            transform: rotate(180deg);
         }
         
         .sidebar-footer {
@@ -442,6 +481,30 @@
         .shake-animation {
             animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
         }
+        
+        /* NUEVO: Indicador de análisis disponible */
+        .analysis-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -450,7 +513,7 @@
         <i class="fas fa-bars"></i>
     </button>
 
-    <!-- Sidebar -->
+    <!-- Sidebar ACTUALIZADO -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <i class="fas fa-globe-americas logo-icon"></i>
@@ -470,6 +533,21 @@
                     <span>Mapa de Sismos</span>
                 </a>
             </li>
+            
+            <!-- NUEVO: Submenú de Análisis -->
+            <li>
+                <a href="#" class="submenu-toggle" onclick="toggleSubmenu(event, 'analisisSubmenu')">
+                    <i class="fas fa-chart-line icon"></i>
+                    <span>Análisis Avanzado</span>
+                </a>
+                <ul class="sidebar-submenu" id="analisisSubmenu">
+                    <li><a href="/mapas/poblacion"><i class="fas fa-users"></i> Impacto Poblacional</a></li>
+                    <li><a href="/mapas/economia"><i class="fas fa-dollar-sign"></i> Análisis Económico</a></li>
+                    <li><a href="/mapas/magnitudes"><i class="fas fa-tachometer-alt"></i> Análisis de Magnitudes</a></li>
+                    <li><a href="/mapas/riesgo-sismico"><i class="fas fa-exclamation-triangle"></i> Zonas de Riesgo</a></li>
+                </ul>
+            </li>
+            
             <li>
                 <a href="/alerts">
                     <i class="fas fa-bell icon"></i>
@@ -518,14 +596,20 @@
 
     <!-- Contenido principal -->
     <div class="content" id="content">
-        <!-- Sección Hero -->
+        <!-- Sección Hero (MANTENER ORIGINAL) -->
         <section class="hero-section">
             <div class="container text-center">
                 <h1 class="display-4 fw-bold mb-4">Monitoreo Sísmico de México</h1>
                 <p class="lead mb-5">Sistema de detección, análisis y visualización de actividad sísmica en tiempo real</p>
-                <a href="/mapa" class="btn btn-primary btn-lg px-5 py-3">
-                    <i class="fas fa-map-marked-alt me-2"></i>Ver Mapa de Sismos
-                </a>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="/mapa" class="btn btn-primary btn-lg px-5 py-3">
+                        <i class="fas fa-map-marked-alt me-2"></i>Ver Mapa de Sismos
+                    </a>
+                    <!-- NUEVO: Botón de análisis -->
+                    <a href="/mapas" class="btn btn-outline-light btn-lg px-4 py-3" th:if="${analisisDisponible}">
+                        <i class="fas fa-chart-line me-2"></i>Análisis Avanzado
+                    </a>
+                </div>
             </div>
             <div class="seismic-animation">
                 <div class="seismic-line"></div>
@@ -537,13 +621,14 @@
             </div>
         </section>
 
-        <!-- Sección Información -->
+        <!-- Sección Información (MANTENER + MEJORAR) -->
         <section class="py-5">
             <div class="container">
                 <h2 class="text-center mb-5">Sistema de Monitoreo de Sismos</h2>
                 <div class="row g-4">
                     <div class="col-md-4">
-                        <div class="card text-center p-4">
+                        <div class="card text-center p-4 position-relative">
+                            <div class="analysis-indicator" th:if="${analisisDisponible}"></div>
                             <div class="card-body">
                                 <i class="fas fa-search-location info-icon"></i>
                                 <h3>Detección Precisa</h3>
@@ -552,7 +637,8 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card text-center p-4">
+                        <div class="card text-center p-4 position-relative">
+                            <div class="analysis-indicator" th:if="${analisisDisponible}"></div>
                             <div class="card-body">
                                 <i class="fas fa-database info-icon"></i>
                                 <h3>Datos en Tiempo Real</h3>
@@ -561,11 +647,12 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card text-center p-4">
+                        <div class="card text-center p-4 position-relative">
+                            <div class="analysis-indicator" th:if="${analisisDisponible}"></div>
                             <div class="card-body">
                                 <i class="fas fa-chart-network info-icon"></i>
-                                <h3>Grafos de Conocimiento</h3>
-                                <p>Visualización avanzada de relaciones entre eventos sísmicos, factores geológicos y patrones históricos para mejor comprensión y análisis.</p>
+                                <h3>Análisis Avanzado</h3>
+                                <p>Visualización avanzada de relaciones entre eventos sísmicos, impacto poblacional, económico y patrones históricos para mejor comprensión.</p>
                             </div>
                         </div>
                     </div>
@@ -573,7 +660,7 @@
             </div>
         </section>
 
-        <!-- Sección Sismos Recientes -->
+        <!-- Sección Sismos Recientes (MANTENER ORIGINAL) -->
         <section class="py-5 bg-light">
             <div class="container">
                 <h2 class="text-center mb-5">Sismos Recientes en México</h2>
@@ -588,7 +675,12 @@
                                 </div>
                                 <p class="text-muted">15 de marzo, 2025 - 08:22:45</p>
                                 <p>Un sismo de magnitud 5.2 sacudió la costa de Oaxaca esta mañana, sin reportes de daños graves. El epicentro fue localizado a 23 km al sur de Puerto Escondido.</p>
-                                <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                                <div class="d-flex gap-2">
+                                    <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                                    <a href="/mapas/poblacion" class="btn btn-outline-secondary btn-sm" th:if="${analisisDisponible}">
+                                        <i class="fas fa-users"></i> Población
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -602,7 +694,12 @@
                                 </div>
                                 <p class="text-muted">10 de marzo, 2025 - 15:45:32</p>
                                 <p>Se registró un sismo de magnitud 4.7 con epicentro a 15 km al noroeste de Acapulco. Las autoridades activaron protocolos de revisión en edificios públicos y escuelas.</p>
-                                <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                                <div class="d-flex gap-2">
+                                    <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                                    <a href="/mapas/economia" class="btn btn-outline-success btn-sm" th:if="${analisisDisponible}">
+                                        <i class="fas fa-dollar-sign"></i> Impacto
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -616,7 +713,12 @@
                                 </div>
                                 <p class="text-muted">2 de marzo, 2025 - 02:10:17</p>
                                 <p>Un fuerte sismo de magnitud 6.1 se sintió en varias localidades de Chiapas. El movimiento activó el sistema de alerta sísmica en la Ciudad de México.</p>
-                                <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                                <div class="d-flex gap-2">
+                                    <a href="#" class="btn btn-outline-primary btn-sm">Ver detalles</a>
+                                    <a href="/mapas/riesgo-sismico" class="btn btn-outline-danger btn-sm" th:if="${analisisDisponible}">
+                                        <i class="fas fa-exclamation-triangle"></i> Riesgo
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -627,7 +729,7 @@
             </div>
         </section>
 
-        <!-- Sección Mapa -->
+        <!-- Sección Mapa (MANTENER ORIGINAL) -->
         <section class="py-5">
             <div class="container">
                 <div class="row align-items-center">
@@ -638,9 +740,15 @@
                             <li class="list-group-item bg-transparent"><i class="fas fa-check-circle text-primary me-2"></i> Filtrar por magnitud, profundidad y fecha</li>
                             <li class="list-group-item bg-transparent"><i class="fas fa-check-circle text-primary me-2"></i> Ver detalles técnicos de cada evento</li>
                             <li class="list-group-item bg-transparent"><i class="fas fa-check-circle text-primary me-2"></i> Analizar zonas de mayor actividad sísmica</li>
+                            <li class="list-group-item bg-transparent" th:if="${analisisDisponible}"><i class="fas fa-check-circle text-success me-2"></i> Análisis de impacto poblacional y económico</li>
                             <li class="list-group-item bg-transparent"><i class="fas fa-check-circle text-primary me-2"></i> Descargar datos para investigación</li>
                         </ul>
-                        <a href="/map" class="btn btn-primary btn-lg">Explorar Mapa</a>
+                        <div class="d-flex gap-3">
+                            <a href="/mapa" class="btn btn-primary btn-lg">Explorar Mapa</a>
+                            <a href="/mapas" class="btn btn-outline-primary btn-lg" th:if="${analisisDisponible}">
+                                <i class="fas fa-chart-line me-2"></i>Análisis
+                            </a>
+                        </div>
                     </div>
                     <div class="col-lg-6 mt-4 mt-lg-0">
                         <div class="card">
@@ -651,20 +759,20 @@
             </div>
         </section>
 
-        <!-- Sección Estadísticas -->
+        <!-- Sección Estadísticas (MEJORADA CON DATOS REALES) -->
         <section class="py-5 bg-light">
             <div class="container">
                 <h2 class="text-center mb-5">Estadísticas de Actividad Sísmica</h2>
                 <div class="row text-center">
                     <div class="col-md-3 col-6 mb-4">
                         <div class="card p-3">
-                            <h3 class="display-4 text-primary">127</h3>
+                            <h3 class="display-4 text-primary" th:text="${sismosUltimoMes ?: 127}">127</h3>
                             <p>Sismos en el último mes</p>
                         </div>
                     </div>
                     <div class="col-md-3 col-6 mb-4">
                         <div class="card p-3">
-                            <h3 class="display-4 text-primary">5.2</h3>
+                            <h3 class="display-4 text-primary" th:text="${magnitudMaxima ?: 5.2}">5.2</h3>
                             <p>Magnitud máxima registrada</p>
                         </div>
                     </div>
@@ -676,15 +784,34 @@
                     </div>
                     <div class="col-md-3 col-6 mb-4">
                         <div class="card p-3">
-                            <h3 class="display-4 text-primary">32</h3>
+                            <h3 class="display-4 text-primary" th:text="${estadosMonitoreados ?: 32}">32</h3>
                             <p>Estados monitoreados</p>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- NUEVO: Indicador de análisis disponible -->
+                <div class="text-center mt-4" th:if="${analisisDisponible}">
+                    <div class="alert alert-success d-inline-block">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <strong>Análisis Avanzado Disponible:</strong> 
+                        Datos de impacto poblacional, económico y análisis de riesgo sísmico actualizados.
+                        <a href="/mapas" class="alert-link ms-2">Ver análisis completo</a>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Footer -->
+        <!-- NUEVO: Sección de Error (si hay problemas) -->
+        <div class="container" th:if="${error}">
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span th:text="${error}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+
+        <!-- Footer (MANTENER ORIGINAL) -->
         <footer class="footer">
             <div class="container">
                 <div class="row">
@@ -702,20 +829,20 @@
                         <h5 class="footer-title">Enlaces</h5>
                         <ul class="footer-links">
                             <li><a href="/">Inicio</a></li>
-                            <li><a href="/map">Mapa de Sismos</a></li>
+                            <li><a href="/mapa">Mapa de Sismos</a></li>
                             <li><a href="/alerts">Alertas</a></li>
                             <li><a href="/reports">Informes</a></li>
                             <li><a href="/auth/login">Administrador</a></li>
                         </ul>
                     </div>
                     <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
-                        <h5 class="footer-title">Recursos</h5>
+                        <h5 class="footer-title">Análisis</h5>
                         <ul class="footer-links">
-                            <li><a href="#">API</a></li>
-                            <li><a href="#">Documentación</a></li>
-                            <li><a href="#">Datos históricos</a></li>
-                            <li><a href="#">Preguntas frecuentes</a></li>
-                            <li><a href="#">Soporte</a></li>
+                            <li><a href="/mapas/poblacion">Impacto Poblacional</a></li>
+                            <li><a href="/mapas/economia">Análisis Económico</a></li>
+                            <li><a href="/mapas/magnitudes">Magnitudes</a></li>
+                            <li><a href="/mapas/riesgo-sismico">Zonas de Riesgo</a></li>
+                            <li><a href="/mapas">Todos los Análisis</a></li>
                         </ul>
                     </div>
                     <div class="col-lg-4 col-md-4">
@@ -733,10 +860,10 @@
         </footer>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts (MANTENER + AGREGAR) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle Sidebar
+        // Toggle Sidebar (MANTENER)
         const sidebar = document.getElementById('sidebar');
         const content = document.getElementById('content');
         const sidebarToggle = document.getElementById('sidebarToggle');
@@ -746,16 +873,14 @@
             content.classList.toggle('sidebar-active');
         });
         
-        // Theme Switch
+        // Theme Switch (MANTENER)
         const themeSwitch = document.getElementById('themeSwitch');
         
-        // Check for saved theme preference or default to light
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-mode');
             themeSwitch.checked = true;
         }
         
-        // Toggle theme
         themeSwitch.addEventListener('change', function() {
             if (this.checked) {
                 document.body.classList.add('dark-mode');
@@ -766,36 +891,38 @@
             }
         });
         
-        // Simular efecto de temblor
+        // NUEVO: Toggle de submenús
+        function toggleSubmenu(event, submenuId) {
+            event.preventDefault();
+            const submenu = document.getElementById(submenuId);
+            const toggle = event.currentTarget;
+            
+            submenu.classList.toggle('show');
+            toggle.classList.toggle('active');
+        }
+        
+        // Simular efecto de temblor (MANTENER)
         function simulateEarthquake() {
             const magnitudes = [3.2, 3.5, 3.8, 4.1, 4.5, 5.0, 5.5];
             
-            // Mostrar un temblor cada 30-60 segundos con probabilidad aleatoria
             setInterval(() => {
-                // Solo 20% de probabilidad de que ocurra un temblor
                 if (Math.random() < 0.20) {
-                    // Seleccionar una magnitud aleatoria
                     const magnitude = magnitudes[Math.floor(Math.random() * magnitudes.length)];
                     
-                    // Para magnitudes altas, aplicar efecto de temblor
                     if (magnitude >= 4.5) {
                         document.body.classList.add('shake-animation');
-                        
-                        // Mostrar notificación de temblor
                         showEarthquakeAlert(magnitude);
                         
-                        // Quitar la clase después de 1 segundo
                         setTimeout(() => {
                             document.body.classList.remove('shake-animation');
                         }, 1000);
                     }
                 }
-            }, Math.random() * 30000 + 30000); // Entre 30 y 60 segundos
+            }, Math.random() * 30000 + 30000);
         }
         
-        // Mostrar alerta de temblor
+        // Mostrar alerta de temblor (MANTENER + MEJORAR)
         function showEarthquakeAlert(magnitude) {
-            // Crear elemento de alerta
             const alert = document.createElement('div');
             alert.className = 'position-fixed bottom-0 end-0 p-3';
             alert.style.zIndex = '9999';
@@ -816,22 +943,23 @@
                             <span class="magnitude me-2">${magnitude}</span>
                             <div>
                                 Se detectó un sismo de magnitud ${magnitude} cerca de ${randomLocation}.
+                                <div class="mt-2">
+                                    <a href="/mapas/riesgo-sismico" class="btn btn-sm btn-outline-danger">Ver análisis</a>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
             
-            // Añadir al body
             document.body.appendChild(alert);
             
-            // Quitar después de 5 segundos
             setTimeout(() => {
                 alert.remove();
             }, 5000);
         }
         
-        // Iniciar simulación de temblores
+        // Iniciar funcionalidades
         document.addEventListener('DOMContentLoaded', () => {
             simulateEarthquake();
         });

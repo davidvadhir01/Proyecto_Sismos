@@ -24,15 +24,15 @@ public class SismoController {
 
     @GetMapping("/dasdasdsa")
     public String index(Model model) {
-        Set<Integer> years = sismoService.getAvailableYears();
-        model.addAttribute("years", years);
+        List<Integer> años = sismoService.getAvailableYears();
+model.addAttribute("years", años);
         return "index";
     }
 
     @GetMapping("/mapa")
     public String mapa(@RequestParam(required = false) Integer year, Model model) {
-        Set<Integer> years = sismoService.getAvailableYears();
-        model.addAttribute("years", years);
+        List<Integer> años = sismoService.getAvailableYears();
+model.addAttribute("years", años); 
         model.addAttribute("selectedYear", year);
         return "mapa";
     }

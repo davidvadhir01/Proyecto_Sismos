@@ -103,8 +103,6 @@ public class SismosCSVReader {
             sismo.setReferencia(cleanReference(line[6]));
             sismo.setEstado(line[9].trim()); // Estatus en posición 9
 
-            sismo.setYearFromDate(); // Método que calcula el año
-
             return sismo;
         } catch (Exception e) {
             logger.error("Error parseando línea: {}", String.join(",", line), e);
