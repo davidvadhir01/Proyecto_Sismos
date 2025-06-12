@@ -1,5 +1,6 @@
 package com.spring.proyectofinal.controller;
 
+import com.spring.proyectofinal.model.Sismo;
 import com.spring.proyectofinal.service.DataWarehouseService;
 import com.spring.proyectofinal.service.SismoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ public class HomeController {
     public String index(Model model) {
         try {
             // === ESTADÍSTICAS PRINCIPALES ===
-            List<Object> sismos = sismoService.obtenerTodosLosSismos();
+            List<Sismo> sismos = sismoService.obtenerTodosLosSismos();
             Integer totalSismos = sismos != null ? sismos.size() : 0;
             
             // Sismos del último mes
@@ -48,7 +49,7 @@ public class HomeController {
             }
             
             // === SISMOS RECIENTES PARA LA PÁGINA ===
-            List<Object> sismosRecientes = sismoService.obtenerSismosRecientes();
+            List<Sismo> sismosRecientes = sismoService.obtenerSismosRecientes();
             
             // === ENVIAR DATOS A LA VISTA ===
             model.addAttribute("totalSismos", totalSismos);
@@ -85,7 +86,7 @@ public class HomeController {
             LocalDateTime fechaLimite = LocalDateTime.now().minusDays(dias);
             // Implementar lógica para contar sismos desde fechaLimite
             // Por ahora retornamos un valor estimado
-            List<Object> todosSismos = sismoService.obtenerTodosLosSismos();
+            List<Sismo> todosSismos = sismoService.obtenerTodosLosSismos();
             return Math.min(todosSismos.size(), 127); // Máximo 127 como en el original
         } catch (Exception e) {
             return 127; // Valor por defecto
@@ -102,25 +103,13 @@ public class HomeController {
         }
     }
     
-    // === RUTAS ADICIONALES PARA LOS MAPAS DE ANÁLISIS ===
+    // === RUTAS ADICIONALES ===
     
-    @GetMapping("/mapa")
-    public String mapaGeneral() {
-        return "redirect:/mapas";
-    }
-    
-    @GetMapping("/mapas")
-    public String mapasMenu(Model model) {
-        // Verificar disponibilidad de datos
-        try {
-            Map<String, Object> datosRiesgo = dataWarehouseService.getMapaRiesgoSismico();
-            model.addAttribute("datosDisponibles", true);
-        } catch (Exception e) {
-            model.addAttribute("datosDisponibles", false);
-            model.addAttribute("error", "Datos de análisis en preparación");
-        }
-        return "mapas/menu";
-    }
+    // ELIMINADO: Este método está duplicado en SismoController
+    // @GetMapping("/mapa")
+    // public String mapaGeneral() {
+    //     return "redirect:/mapas";
+    // }
     
     @GetMapping("/alerts")
     public String alertas() {

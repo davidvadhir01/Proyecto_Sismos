@@ -1,5 +1,6 @@
 package com.spring.proyectofinal.controller;
 
+import com.spring.proyectofinal.model.Sismo;
 import com.spring.proyectofinal.service.DataWarehouseService;
 import com.spring.proyectofinal.service.SismoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -83,7 +85,7 @@ public class MapasController {
     public String mapaMagnitudes(Model model) {
         try {
             Map<String, Object> datosMagnitudes = dataWarehouseService.getAnalisisMagnitudes();
-            List<Object> sismos = sismoService.obtenerTodosLosSismos();
+            List<Sismo> sismos = sismoService.obtenerTodosLosSismos();
             
             model.addAttribute("datosMagnitudes", datosMagnitudes);
             model.addAttribute("totalSismos", sismos.size());
@@ -111,7 +113,7 @@ public class MapasController {
     @GetMapping("/tiempo-real")
     public String mapaTiempoReal(Model model) {
         try {
-            List<Object> sismosRecientes = sismoService.obtenerSismosRecientes();
+            List<Sismo> sismosRecientes = sismoService.obtenerSismosRecientes();
             model.addAttribute("sismosRecientes", sismosRecientes);
             model.addAttribute("monitoreoActivo", true);
         } catch (Exception e) {
@@ -165,7 +167,7 @@ public class MapasController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getSismosRecientes() {
         try {
-            List<Object> sismosRecientes = sismoService.obtenerSismosRecientes();
+            List<Sismo> sismosRecientes = sismoService.obtenerSismosRecientes();
             
             Map<String, Object> response = new HashMap<>();
             response.put("sismos", sismosRecientes);

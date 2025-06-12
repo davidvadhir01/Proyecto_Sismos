@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Spring Boot Proyecto Sismos
 
 Este proyecto tiene como objetivo identificar zonas de ocurrencia de eventos sísmicos en México mediante trilateración, utilizando datos del Servicio Sismológico Nacional (SSN) y bases de datos complementarias. El sistema genera grafos de conocimiento para modelar entidades y relaciones clave, visualizándolos sobre un mapa interactivo de México.
@@ -53,3 +54,7 @@ git clone https://github.com/LizethDG/ProyectoSismos.git
 - ![image](https://github.com/user-attachments/assets/cb1f1108-4d89-4458-87d9-852d3e4c0f30)
 
 
+=======
+# Proyecto_Sismos
+Proyecto de analisis de sismos
+>>>>>>> f38608b674a6ec172433866c4c581e05a1a65064
