@@ -1,400 +1,984 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis de Impacto Económico - SismoMex</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <title>Mapa Económico de México</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .map-container {
+        #map {
             height: 600px;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        .economic-card {
-            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 10px;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
-            border-radius: 15px;
+            border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
         }
-        .impact-indicator {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        
+        .vulnerable-card {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
             color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .chart-container {
-            background: white;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .filter-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .riesgo-bar {
+            height: 20px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .riesgo-alto { background-color: #dc3545; }
+        .riesgo-moderado { background-color: #ffc107; }
+        .riesgo-bajo { background-color: #28a745; }
+        
+        .estado-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .estado-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+            border-left-color: #28a745;
+        }
+        
+        .estado-item.selected {
+            background-color: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        
+        .vulnerabilidad-muy-alta { border-left-color: #dc3545 !important; }
+        .vulnerabilidad-alta { border-left-color: #fd7e14 !important; }
+        .vulnerabilidad-media { border-left-color: #ffc107 !important; }
+        .vulnerabilidad-baja { border-left-color: #28a745 !important; }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #333;
+        }
+        
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+        
+        .filtro-activo {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
+            color: white;
+        }
+        
+        .sector-filter {
+            margin-bottom: 15px;
+        }
+        
+        .pib-range {
+            margin-bottom: 15px;
+        }
+        
+        .progress-custom {
+            height: 25px;
+            border-radius: 12px;
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        .progress-bar-custom {
+            border-radius: 12px;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-globe-americas me-2"></i>SismoMex
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/">Inicio</a>
-                <a class="nav-link" href="/mapas">Análisis</a>
-                <a class="nav-link active" href="/mapas/economia">Economía</a>
+<nav class="navbar navbar-expand-lg navbar-dark bg-success">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-chart-line me-2"></i>EconMex
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/mapa">Sismos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/mapas/economia">Economía</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/mapas">Análisis Avanzado</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Spinner de carga -->
+<div class="loading-spinner" id="loadingSpinner">
+    <div class="spinner-border text-success" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<div class="container-fluid mt-4">
+    <!-- Encabezado con estadísticas principales -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-3">
+                <i class="fas fa-chart-area text-success me-2"></i>
+                Mapa Económico de México
+            </h1>
+            
+            <!-- Filtro activo -->
+            <div id="filtroActivo" class="filtro-activo" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Filtros aplicados:</strong> <span id="filtroTexto"></span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="limpiarFiltros()">
+                        <i class="fas fa-times"></i> Quitar filtros
+                    </button>
+                </div>
             </div>
         </div>
-    </nav>
-
-    <div class="container-fluid py-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1><i class="fas fa-dollar-sign text-success me-3"></i>Análisis de Impacto Económico</h1>
-                    <a href="/mapas" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Volver a Análisis
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <!-- Panel de Estadísticas Económicas -->
-            <div class="col-lg-3">
-                <div class="economic-card">
-                    <h5><i class="fas fa-chart-line me-2"></i>Indicadores Económicos</h5>
-                    <div class="impact-indicator mt-3">
-                        <h3>$2.5T</h3>
-                        <p class="mb-0">PIB Total Analizado</p>
-                    </div>
-                    <div class="mt-3">
-                        <p><strong>Estados Económicamente Vulnerables:</strong></p>
-                        <ul class="list-unstyled">
-                            <li><i class="fas fa-circle text-danger me-2"></i>Oaxaca: $45B PIB</li>
-                            <li><i class="fas fa-circle text-warning me-2"></i>Guerrero: $38B PIB</li>
-                            <li><i class="fas fa-circle text-warning me-2"></i>Chiapas: $42B PIB</li>
-                            <li><i class="fas fa-circle text-info me-2"></i>Michoacán: $67B PIB</li>
-                        </ul>
-                    </div>
-                    <div class="mt-4">
-                        <h6>Distribución del Riesgo Económico:</h6>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-danger" style="width: 25%">Alto Riesgo: 25%</div>
-                        </div>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-warning" style="width: 35%">Riesgo Moderado: 35%</div>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar bg-success" style="width: 40%">Bajo Riesgo: 40%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header bg-success text-white">
-                        <h6><i class="fas fa-filter me-2"></i>Filtros Económicos</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Sector Económico</label>
-                            <select class="form-select">
-                                <option>Todos los sectores</option>
-                                <option>Manufactura</option>
-                                <option>Servicios</option>
-                                <option>Turismo</option>
-                                <option>Agricultura</option>
-                                <option>Minería</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nivel de PIB</label>
-                            <select class="form-select">
-                                <option>Todos los niveles</option>
-                                <option>PIB Alto (>$100B)</option>
-                                <option>PIB Medio ($50B-$100B)</option>
-                                <option>PIB Bajo (<$50B)</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Vulnerabilidad Sísmica</label>
-                            <select class="form-select">
-                                <option>Todas las vulnerabilidades</option>
-                                <option>Alta vulnerabilidad</option>
-                                <option>Vulnerabilidad moderada</option>
-                                <option>Baja vulnerabilidad</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-success w-100">
-                            <i class="fas fa-search me-2"></i>Actualizar Análisis
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Gráfico de Tendencias -->
-                <div class="chart-container mt-3">
-                    <h6 class="text-center mb-3">Pérdidas Económicas por Sismos</h6>
-                    <!--<canvas id="economicChart" width="250" height="150"></canvas>-->
-                </div>
-            </div>
-
-            <!-- Mapa Principal -->
-            <div class="col-lg-9">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fas fa-map-marked-alt text-success me-2"></i>
-                                Mapa de Impacto Económico por Actividad Sísmica
-                            </h5>
-                            <div>
-                                <button class="btn btn-sm btn-outline-success me-2">
-                                    <i class="fas fa-download me-1"></i>Exportar Datos
-                                </button>
-                                <button class="btn btn-sm btn-success">
-                                    <i class="fas fa-chart-bar me-1"></i>Ver Reportes
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div id="economiaMap" class="map-container"></div>
-                    </div>
-                </div>
-
-                <!-- Tarjetas de Análisis Económico -->
-                <div class="row mt-4">
-                    <div class="col-md-3">
-                        <div class="card text-center border-danger">
-                            <div class="card-body">
-                                <i class="fas fa-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
-                                <h5 class="mt-3">PIB en Alto Riesgo</h5>
-                                <h3 class="text-danger">$625B</h3>
-                                <p class="text-muted">25% del PIB nacional expuesto</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-center border-warning">
-                            <div class="card-body">
-                                <i class="fas fa-industry text-warning" style="font-size: 2rem;"></i>
-                                <h5 class="mt-3">Sectores Vulnerables</h5>
-                                <h3 class="text-warning">48%</h3>
-                                <p class="text-muted">manufactura en zonas sísmicas</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-center border-info">
-                            <div class="card-body">
-                                <i class="fas fa-chart-line text-info" style="font-size: 2rem;"></i>
-                                <h5 class="mt-3">Pérdidas Potenciales</h5>
-                                <h3 class="text-info">$15B</h3>
-                                <p class="text-muted">estimado por sismo mayor</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-center border-success">
-                            <div class="card-body">
-                                <i class="fas fa-shield-alt text-success" style="font-size: 2rem;"></i>
-                                <h5 class="mt-3">PIB Protegido</h5>
-                                <h3 class="text-success">$1T</h3>
-                                <p class="text-muted">en zonas de bajo riesgo</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabla de Estados -->
-                <div class="card mt-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="fas fa-table me-2"></i>Ranking de Estados por Vulnerabilidad Económica</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Ranking</th>
-                                        <th>Estado</th>
-                                        <th>PIB</th>
-                                        <th>Riesgo Sísmico</th>
-                                        <th>Vulnerabilidad</th>
-                                        <th>Pérdida Estimada</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><span class="badge bg-danger">1</span></td>
-                                        <td><strong>Oaxaca</strong></td>
-                                        <td>$45B</td>
-                                        <td><span class="badge bg-danger">Alto</span></td>
-                                        <td><span class="badge bg-danger">Muy Alta</span></td>
-                                        <td class="text-danger">$2.2B</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="badge bg-warning">2</span></td>
-                                        <td><strong>Guerrero</strong></td>
-                                        <td>$38B</td>
-                                        <td><span class="badge bg-danger">Alto</span></td>
-                                        <td><span class="badge bg-warning">Alta</span></td>
-                                        <td class="text-danger">$1.9B</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="badge bg-warning">3</span></td>
-                                        <td><strong>Chiapas</strong></td>
-                                        <td>$42B</td>
-                                        <td><span class="badge bg-warning">Moderado</span></td>
-                                        <td><span class="badge bg-warning">Alta</span></td>
-                                        <td class="text-warning">$1.7B</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="badge bg-info">4</span></td>
-                                        <td><strong>Michoacán</strong></td>
-                                        <td>$67B</td>
-                                        <td><span class="badge bg-warning">Moderado</span></td>
-                                        <td><span class="badge bg-info">Media</span></td>
-                                        <td class="text-warning">$2.3B</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="badge bg-success">5</span></td>
-                                        <td><strong>Jalisco</strong></td>
-                                        <td>$185B</td>
-                                        <td><span class="badge bg-success">Bajo</span></td>
-                                        <td><span class="badge bg-success">Baja</span></td>
-                                        <td class="text-success">$0.8B</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group" role="group">
+                <button id="btnExportarCSV" class="btn export-btn">
+                    <i class="fas fa-download me-1"></i>Exportar CSV
+                </button>
+                <button id="btnExportarReporte" class="btn export-btn ms-2">
+                    <i class="fas fa-file-pdf me-1"></i>Generar Reporte
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Inicializar mapa económico
-        const economiaMap = L.map('economiaMap').setView([23.6345, -102.5528], 5);
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div id="map" class="position-relative">
+                        <!-- El mapa se carga aquí -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3">
+            <!-- Estadísticas Generales -->
+            <div class="stats-card">
+                <h5><i class="fas fa-dollar-sign me-2"></i>PIB Total Analizado</h5>
+                <h2 id="pibTotal">$2.5T</h2>
+                <p class="mb-3">Producción Bruta Total Nacional</p>
+                
+                <div class="mt-3">
+                    <small class="text-light">Estados analizados: <strong id="estadosAnalizados">32</strong></small>
+                </div>
+            </div>
+
+            <!-- Estados Vulnerables -->
+            <div class="vulnerable-card">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Estados Económicamente Vulnerables:</h6>
+                <div class="mt-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color" style="background-color: #dc3545; width: 12px; height: 12px;"></div>
+                        <span class="ms-2">Oaxaca: $45B PIB</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color" style="background-color: #fd7e14; width: 12px; height: 12px;"></div>
+                        <span class="ms-2">Guerrero: $38B PIB</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color" style="background-color: #ffc107; width: 12px; height: 12px;"></div>
+                        <span class="ms-2">Chiapas: $42B PIB</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-color" style="background-color: #20c997; width: 12px; height: 12px;"></div>
+                        <span class="ms-2">Michoacán: $67B PIB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribución del Riesgo -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6><i class="fas fa-chart-pie me-2"></i>Distribución del Riesgo Económico</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Alto Riesgo: <strong id="altoRiesgoCount">4</strong> estados</label>
+                        <div class="progress progress-custom mb-2">
+                            <div id="altoRiesgoBar" class="progress-bar bg-danger progress-bar-custom" style="width: 12.5%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Riesgo Moderado: <strong id="moderadoRiesgoCount">8</strong> estados</label>
+                        <div class="progress progress-custom mb-2">
+                            <div id="moderadoRiesgoBar" class="progress-bar bg-warning progress-bar-custom" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Bajo Riesgo: <strong id="bajoRiesgoCount">20</strong> estados</label>
+                        <div class="progress progress-custom">
+                            <div id="bajoRiesgoBar" class="progress-bar bg-success progress-bar-custom" style="width: 62.5%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros Económicos -->
+            <div class="filter-card">
+                <h6><i class="fas fa-sliders-h me-2"></i>Filtros Económicos</h6>
+                
+                <div class="sector-filter">
+                    <label class="form-label">Sector Económico</label>
+                    <select class="form-select" id="sectorSelect">
+                        <option value="">Todos los sectores</option>
+                        <option value="industrial">Industrial</option>
+                        <option value="servicios">Servicios</option>
+                        <option value="agricola">Agrícola</option>
+                        <option value="turistico">Turístico</option>
+                        <option value="minero">Minero</option>
+                    </select>
+                </div>
+                
+                <div class="pib-range">
+                    <label class="form-label">Nivel de PIB (Miles de millones)</label>
+                    <input type="range" class="form-range" id="pibRange" 
+                           min="0" max="1500" step="50" value="0">
+                    <div class="d-flex justify-content-between">
+                        <span>$0B</span>
+                        <span id="pibValue">$0B+</span>
+                        <span>$1.5T</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Filtrar por Estado</label>
+                    <select class="form-select" id="estadoSelect">
+                        <option value="">Todos los estados</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Vulnerabilidad Económica</label>
+                    <select class="form-select" id="vulnerabilidadSelect">
+                        <option value="">Todos los niveles</option>
+                        <option value="muy-alta">Muy Alta</option>
+                        <option value="alta">Alta</option>
+                        <option value="media">Media</option>
+                        <option value="baja">Baja</option>
+                    </select>
+                </div>
+
+                <button id="aplicarFiltros" class="btn btn-light w-100">
+                    <i class="fas fa-search me-2"></i>Aplicar Filtros
+                </button>
+            </div>
+
+            <!-- Lista de Estados -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6><i class="fas fa-map-marker-alt me-2"></i>Indicadores por Estado</h6>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div id="estadosLista">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando estados...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leyenda -->
+            <div class="card mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6><strong>Leyenda - Vulnerabilidad Económica</strong></h6>
+                </div>
+                <div class="card-body">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #dc3545;"></div>
+                        <span>Muy Alta (PIB < $50B)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #fd7e14;"></div>
+                        <span>Alta (PIB $50B-150B)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffc107;"></div>
+                        <span>Media (PIB $150B-400B)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #28a745;"></div>
+                        <span>Baja (PIB > $400B)</span>
+                    </div>
+                    <small class="text-muted">El tamaño del círculo indica el PIB del estado</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Datos económicos completos de todos los estados mexicanos
+    const datosEconomicos = {
+        'Aguascalientes': { pib: 185.0005, insumos: 111.0003, valorAgregado: 73.9992, capital: 22.5, activos: 15.75, vulnerabilidad: 'alta' },
+        'Baja California': { pib: 520.00075, insumos: 312.00045, valorAgregado: 207.9993, capital: 63.0, activos: 44.1, vulnerabilidad: 'media' },
+        'Baja California Sur': { pib: 95.0008, insumos: 57.00048, valorAgregado: 37.99932, capital: 11.5, activos: 8.05, vulnerabilidad: 'muy-alta' },
+        'Campeche': { pib: 320.0006, insumos: 192.00036, valorAgregado: 127.99924, capital: 38.8, activos: 27.16, vulnerabilidad: 'media' },
+        'Coahuila': { pib: 420.00085, insumos: 252.00051, valorAgregado: 167.99934, capital: 50.9, activos: 35.63, vulnerabilidad: 'media' },
+        'Colima': { pib: 45.0008, insumos: 27.00048, valorAgregado: 17.99932, capital: 5.5, activos: 3.85, vulnerabilidad: 'muy-alta' },
+        'Chiapas': { pib: 95.0004, insumos: 57.00024, valorAgregado: 37.99916, capital: 11.5, activos: 8.05, vulnerabilidad: 'muy-alta' },
+        'Chihuahua': { pib: 480.0007, insumos: 288.00042, valorAgregado: 191.99928, capital: 58.2, activos: 40.74, vulnerabilidad: 'media' },
+        'Ciudad de Mexico': { pib: 1250.00025, insumos: 750.00015, valorAgregado: 499.9991, capital: 151.5, activos: 106.05, vulnerabilidad: 'baja' },
+        'Durango': { pib: 145.0006, insumos: 87.00036, valorAgregado: 57.99924, capital: 17.6, activos: 12.32, vulnerabilidad: 'alta' },
+        'Guanajuato': { pib: 380.0009, insumos: 228.00054, valorAgregado: 151.99936, capital: 46.0, activos: 32.2, vulnerabilidad: 'media' },
+        'Guerrero': { pib: 98.00075, insumos: 58.00045, valorAgregado: 38.9993, capital: 12.0, activos: 8.4, vulnerabilidad: 'muy-alta' },
+        'Hidalgo': { pib: 165.00045, insumos: 99.00027, valorAgregado: 65.99918, capital: 20.0, activos: 14.0, vulnerabilidad: 'alta' },
+        'Jalisco': { pib: 650.00025, insumos: 390.00015, valorAgregado: 259.9991, capital: 78.7, activos: 55.09, vulnerabilidad: 'baja' },
+        'Mexico': { pib: 850.0009, insumos: 510.00054, valorAgregado: 339.99936, capital: 103.0, activos: 72.1, vulnerabilidad: 'baja' },
+        'Michoacan': { pib: 220.0006, insumos: 132.00036, valorAgregado: 87.99924, capital: 26.7, activos: 18.69, vulnerabilidad: 'alta' },
+        'Morelos': { pib: 125.0005, insumos: 75.0003, valorAgregado: 49.9992, capital: 15.1, activos: 10.57, vulnerabilidad: 'alta' },
+        'Nayarit': { pib: 85.0004, insumos: 51.00024, valorAgregado: 33.99916, capital: 10.3, activos: 7.21, vulnerabilidad: 'muy-alta' },
+        'Nuevo Leon': { pib: 750.00085, insumos: 450.00051, valorAgregado: 299.99934, capital: 90.9, activos: 63.63, vulnerabilidad: 'baja' },
+        'Oaxaca': { pib: 125.0005, insumos: 75.0003, valorAgregado: 49.9992, capital: 15.0, activos: 10.5, vulnerabilidad: 'muy-alta' },
+        'Puebla': { pib: 380.0007, insumos: 228.00042, valorAgregado: 151.99928, capital: 46.0, activos: 32.2, vulnerabilidad: 'media' },
+        'Queretaro': { pib: 285.0006, insumos: 171.00036, valorAgregado: 113.99924, capital: 34.5, activos: 24.15, vulnerabilidad: 'alta' },
+        'Quintana Roo': { pib: 195.0008, insumos: 117.00048, valorAgregado: 77.99932, capital: 23.6, activos: 16.52, vulnerabilidad: 'alta' },
+        'San Luis Potosi': { pib: 185.00075, insumos: 111.00045, valorAgregado: 73.9993, capital: 22.4, activos: 15.68, vulnerabilidad: 'alta' },
+        'Sinaloa': { pib: 265.0009, insumos: 159.00054, valorAgregado: 105.99936, capital: 32.1, activos: 22.47, vulnerabilidad: 'alta' },
+        'Sonora': { pib: 320.00085, insumos: 192.00051, valorAgregado: 127.99934, capital: 38.8, activos: 27.16, vulnerabilidad: 'media' },
+        'Tabasco': { pib: 285.0007, insumos: 171.00042, valorAgregado: 113.99928, capital: 34.5, activos: 24.15, vulnerabilidad: 'alta' },
+        'Tamaulipas': { pib: 385.0006, insumos: 231.00036, valorAgregado: 153.99924, capital: 46.7, activos: 32.69, vulnerabilidad: 'media' },
+        'Tlaxcala': { pib: 65.0004, insumos: 39.00024, valorAgregado: 25.99916, capital: 7.9, activos: 5.53, vulnerabilidad: 'muy-alta' },
+        'Veracruz': { pib: 420.00085, insumos: 252.00051, valorAgregado: 167.99934, capital: 50.9, activos: 35.63, vulnerabilidad: 'media' },
+        'Yucatan': { pib: 185.0008, insumos: 111.00048, valorAgregado: 73.99932, capital: 22.4, activos: 15.68, vulnerabilidad: 'alta' },
+        'Zacatecas': { pib: 125.00075, insumos: 75.00045, valorAgregado: 49.9993, capital: 15.1, activos: 10.57, vulnerabilidad: 'muy-alta' }
+    };
+
+    // Coordenadas de todos los estados mexicanos
+    const coordenadasEstados = {
+        'Aguascalientes': [21.8853, -102.2916],
+        'Baja California': [30.8406, -115.2838],
+        'Baja California Sur': [26.0444, -111.6660],
+        'Campeche': [19.8301, -90.5349],
+        'Coahuila': [25.4232, -101.0053],
+        'Colima': [19.2452, -103.7240],
+        'Chiapas': [16.7569, -93.1292],
+        'Chihuahua': [28.6353, -106.0889],
+        'Ciudad de Mexico': [19.4326, -99.1332],
+        'Durango': [24.0277, -104.6532],
+        'Guanajuato': [21.0190, -101.2574],
+        'Guerrero': [17.4391, -99.5451],
+        'Hidalgo': [20.0911, -98.7624],
+        'Jalisco': [20.6595, -103.3494],
+        'Mexico': [19.3907, -99.5036],
+        'Michoacan': [19.5665, -101.7068],
+        'Morelos': [18.6813, -99.1013],
+        'Nayarit': [21.7514, -104.8455],
+        'Nuevo Leon': [25.5922, -99.9962],
+        'Oaxaca': [17.0732, -96.7266],
+        'Puebla': [19.0414, -98.2063],
+        'Queretaro': [20.5888, -100.3899],
+        'Quintana Roo': [19.1817, -88.4791],
+        'San Luis Potosi': [22.1565, -100.9855],
+        'Sinaloa': [24.8069, -107.4458],
+        'Sonora': [29.2972, -110.3309],
+        'Tabasco': [17.8409, -92.6189],
+        'Tamaulipas': [23.7369, -99.1411],
+        'Tlaxcala': [19.3139, -98.2404],
+        'Veracruz': [19.1738, -96.1342],
+        'Yucatan': [20.7099, -89.0943],
+        'Zacatecas': [22.7709, -102.5832]
+    };
+
+    // Variables globales
+    let map;
+    let markersLayer;
+    let estadosFiltrados = Object.keys(datosEconomicos);
+    let filtros = {
+        pibMinimo: 0,
+        sector: '',
+        estado: '',
+        vulnerabilidad: ''
+    };
+
+    // Inicializar el mapa
+    function initMap() {
+        map = L.map('map').setView([23.6345, -102.5528], 5);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(economiaMap);
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-        // Datos económicos por estado
-        const economiaData = [
-            { nombre: 'Oaxaca', lat: 17.0732, lng: -96.7266, pib: 45, riesgo: 'alto', vulnerabilidad: 'muy alta' },
-            { nombre: 'Guerrero', lat: 17.4391, lng: -99.5451, pib: 38, riesgo: 'alto', vulnerabilidad: 'alta' },
-            { nombre: 'Chiapas', lat: 16.7569, lng: -93.1292, pib: 42, riesgo: 'moderado', vulnerabilidad: 'alta' },
-            { nombre: 'Michoacán', lat: 19.5665, lng: -101.7068, pib: 67, riesgo: 'moderado', vulnerabilidad: 'media' },
-            { nombre: 'Ciudad de México', lat: 19.4326, lng: -99.1332, pib: 425, riesgo: 'moderado', vulnerabilidad: 'media' },
-            { nombre: 'Jalisco', lat: 20.6595, lng: -103.3494, pib: 185, riesgo: 'bajo', vulnerabilidad: 'baja' },
-            { nombre: 'Nuevo León', lat: 25.6866, lng: -100.3161, pib: 198, riesgo: 'bajo', vulnerabilidad: 'baja' },
-            { nombre: 'Puebla', lat: 19.0414, lng: -98.2063, pib: 92, riesgo: 'moderado', vulnerabilidad: 'media' }
-        ];
+        markersLayer = L.layerGroup().addTo(map);
+    }
 
-        // Función para obtener color según vulnerabilidad
-        function getVulnerabilityColor(vulnerabilidad) {
-            switch(vulnerabilidad) {
-                case 'muy alta': return '#8b0000';
-                case 'alta': return '#e74c3c';
-                case 'media': return '#f39c12';
-                case 'baja': return '#27ae60';
-                default: return '#95a5a6';
-            }
+    // Función para obtener el color según la vulnerabilidad económica
+    function getColorVulnerabilidad(vulnerabilidad) {
+        switch(vulnerabilidad) {
+            case 'muy-alta': return '#dc3545'; // Rojo
+            case 'alta': return '#fd7e14';     // Naranja
+            case 'media': return '#ffc107';    // Amarillo
+            case 'baja': return '#28a745';     // Verde
+            default: return '#6c757d';         // Gris
         }
+    }
 
-        // Función para obtener tamaño según PIB
-        function getPIBRadius(pib) {
-            return Math.sqrt(pib / 10) * 3;
-        }
+    // Función para obtener el tamaño del marcador según el PIB
+    function getSizePIB(pib) {
+        // Escala logarítmica para mejor visualización
+        if (pib >= 1000) return 30;      // Muy grande
+        if (pib >= 500) return 25;       // Grande
+        if (pib >= 200) return 20;       // Medio-grande
+        if (pib >= 100) return 15;       // Medio
+        if (pib >= 50) return 12;        // Pequeño-medio
+        return 8;                        // Pequeño
+    }
 
-        // Agregar marcadores económicos
-        economiaData.forEach(function(estado) {
-            const radius = getPIBRadius(estado.pib);
-            const color = getVulnerabilityColor(estado.vulnerabilidad);
-            
-            const circle = L.circleMarker([estado.lat, estado.lng], {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.7,
-                radius: radius,
-                weight: 3
-            }).addTo(economiaMap);
-
-            // Popup con información económica
-            circle.bindPopup(`
-                <div class="text-center">
-                    <h6><strong>${estado.nombre}</strong></h6>
-                    <p class="mb-1"><i class="fas fa-dollar-sign"></i> PIB: $${estado.pib}B</p>
-                    <p class="mb-1"><i class="fas fa-exclamation-triangle"></i> Riesgo: ${estado.riesgo}</p>
-                    <p class="mb-1"><i class="fas fa-shield-alt"></i> Vulnerabilidad: ${estado.vulnerabilidad}</p>
-                    <span class="badge" style="background-color: ${color};">${estado.vulnerabilidad.toUpperCase()}</span>
-                </div>
-            `);
-        });
-
-        // Leyenda económica
-        const economicLegend = L.control({position: 'bottomright'});
-        economicLegend.onAdd = function (map) {
-            const div = L.DomUtil.create('div', 'info legend');
-            div.style.backgroundColor = 'white';
-            div.style.padding = '10px';
-            div.style.borderRadius = '5px';
-            div.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-            
-            div.innerHTML = `
-                <h6><strong>Vulnerabilidad Económica</strong></h6>
-                <i style="background: #8b0000; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> Muy Alta<br>
-                <i style="background: #e74c3c; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> Alta<br>
-                <i style="background: #f39c12; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> Media<br>
-                <i style="background: #27ae60; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> Baja<br>
-                <small>El tamaño indica el PIB del estado</small>
-            `;
-            return div;
+    // Función para obtener descripción de vulnerabilidad
+    function getDescripcionVulnerabilidad(vulnerabilidad) {
+        const descripciones = {
+            'muy-alta': { nivel: 'MUY ALTA', clase: 'danger', descripcion: 'Requiere atención inmediata' },
+            'alta': { nivel: 'ALTA', clase: 'warning', descripcion: 'Necesita intervención' },
+            'media': { nivel: 'MEDIA', clase: 'info', descripcion: 'En desarrollo' },
+            'baja': { nivel: 'BAJA', clase: 'success', descripcion: 'Economía robusta' }
         };
-        economicLegend.addTo(economiaMap);
+        return descripciones[vulnerabilidad] || { nivel: 'DESCONOCIDA', clase: 'secondary', descripcion: 'Sin datos' };
+    }
 
-        // Gráfico de pérdidas económicas
-        const ctx = document.getElementById('economicChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['2020', '2021', '2022', '2023', '2024'],
-                datasets: [{
-                    label: 'Pérdidas (Billones $)',
-                    data: [1.2, 0.8, 2.1, 1.5, 0.9],
-                    backgroundColor: 'rgba(231, 76, 60, 0.8)',
-                    borderColor: 'rgba(231, 76, 60, 1)',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Billones USD'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
+    // Función para cargar y actualizar marcadores
+    function actualizarMarcadores() {
+        markersLayer.clearLayers();
+
+        // Aplicar filtros
+        const estadosAMostrar = Object.keys(datosEconomicos).filter(estado => {
+            const datos = datosEconomicos[estado];
+            
+            // Filtro por PIB mínimo
+            if (datos.pib < filtros.pibMinimo) return false;
+            
+            // Filtro por estado específico
+            if (filtros.estado && estado !== filtros.estado) return false;
+            
+            // Filtro por vulnerabilidad
+            if (filtros.vulnerabilidad && datos.vulnerabilidad !== filtros.vulnerabilidad) return false;
+            
+            return true;
+        });
+
+        estadosFiltrados = estadosAMostrar;
+
+        // Añadir marcadores al mapa
+        estadosAMostrar.forEach(estado => {
+            const datos = datosEconomicos[estado];
+            const coordenadas = coordenadasEstados[estado];
+            
+            if (coordenadas) {
+                const vulnerabilidad = getDescripcionVulnerabilidad(datos.vulnerabilidad);
+                
+                const circle = L.circleMarker(coordenadas, {
+                    radius: getSizePIB(datos.pib),
+                    fillColor: getColorVulnerabilidad(datos.vulnerabilidad),
+                    color: '#000',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+
+                const popupContent = `
+                    <div class="text-center">
+                        <h6><strong>${estado}</strong></h6>
+                        <div class="mb-2">
+                            <span class="badge bg-${vulnerabilidad.clase} fs-6">Riesgo ${vulnerabilidad.nivel}</span>
+                        </div>
+                        <div class="text-start">
+                            <p class="mb-1">
+                                <i class="fas fa-chart-line text-success"></i> 
+                                <strong>PIB:</strong> ${datos.pib.toFixed(1)}B
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-industry text-primary"></i> 
+                                <strong>Valor Agregado:</strong> ${datos.valorAgregado.toFixed(1)}B
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-coins text-warning"></i> 
+                                <strong>Formación de Capital:</strong> ${datos.capital.toFixed(1)}B
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-building text-info"></i> 
+                                <strong>Activos Fijos:</strong> ${datos.activos.toFixed(1)}B
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-exclamation-triangle text-${vulnerabilidad.clase}"></i> 
+                                <strong>Vulnerabilidad:</strong> ${vulnerabilidad.nivel}
+                            </p>
+                            <p class="mb-0">
+                                <small class="text-muted">${vulnerabilidad.descripcion}</small>
+                            </p>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="centrarEnEstado('${estado}')">
+                                <i class="fas fa-crosshairs"></i> Centrar
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" onclick="filtrarPorEstado('${estado}')">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                circle.bindPopup(popupContent, { maxWidth: 350 });
+                markersLayer.addLayer(circle);
+                
+                // Tooltip al hacer hover
+                circle.on('mouseover', function() {
+                    this.bindTooltip(`${estado}: ${datos.pib.toFixed(1)}B PIB`, {
+                        permanent: false,
+                        direction: 'top'
+                    }).openTooltip();
+                });
             }
         });
-    </script>
+
+        // Actualizar estadísticas
+        actualizarEstadisticas();
+        generarListaEstados();
+        mostrarFiltroActivo();
+    }
+
+    // Función para poblar el select de estados
+    function poblarSelectEstados() {
+        const estadoSelect = document.getElementById('estadoSelect');
+        const estados = Object.keys(datosEconomicos).sort();
+        
+        estadoSelect.innerHTML = '<option value="">Todos los estados</option>';
+        
+        estados.forEach(estado => {
+            const option = document.createElement('option');
+            option.value = estado;
+            option.textContent = estado;
+            estadoSelect.appendChild(option);
+        });
+    }
+
+    // Función para generar lista de estados con indicadores
+    function generarListaEstados() {
+        const listaContainer = document.getElementById('estadosLista');
+        listaContainer.innerHTML = '';
+
+        // Ordenar estados por PIB descendente
+        const estadosOrdenados = estadosFiltrados
+            .sort((a, b) => datosEconomicos[b].pib - datosEconomicos[a].pib);
+
+        if (estadosOrdenados.length === 0) {
+            listaContainer.innerHTML = '<p class="text-muted text-center">No hay estados que mostrar</p>';
+            return;
+        }
+
+        estadosOrdenados.forEach(estado => {
+            const datos = datosEconomicos[estado];
+            const vulnerabilidad = getDescripcionVulnerabilidad(datos.vulnerabilidad);
+            const isSelected = filtros.estado === estado;
+            
+            const estadoCard = document.createElement('div');
+            estadoCard.className = `estado-item vulnerabilidad-${datos.vulnerabilidad} ${isSelected ? 'selected' : ''}`;
+            estadoCard.onclick = () => filtrarPorEstado(estado);
+            
+            estadoCard.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${estado}</strong>
+                        <br>
+                        <small class="text-${vulnerabilidad.clase}">
+                            <i class="fas fa-circle me-1"></i>${vulnerabilidad.nivel}
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success">${datos.pib.toFixed(1)}B</span>
+                        <br>
+                        <small class="text-muted">PIB Total</small>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">V. Agregado</small>
+                            <br>
+                            <strong>${datos.valorAgregado.toFixed(1)}B</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Capital</small>
+                            <br>
+                            <strong>${datos.capital.toFixed(1)}B</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Activos</small>
+                            <br>
+                            <strong>${datos.activos.toFixed(1)}B</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            listaContainer.appendChild(estadoCard);
+        });
+    }
+
+    // Función para actualizar estadísticas generales
+    function actualizarEstadisticas() {
+        const totalPIB = estadosFiltrados.reduce((sum, estado) => sum + datosEconomicos[estado].pib, 0);
+        const contadorVulnerabilidad = {
+            'muy-alta': 0,
+            'alta': 0,
+            'media': 0,
+            'baja': 0
+        };
+
+        estadosFiltrados.forEach(estado => {
+            contadorVulnerabilidad[datosEconomicos[estado].vulnerabilidad]++;
+        });
+
+        // Actualizar UI
+        document.getElementById('pibTotal').textContent = `${(totalPIB / 1000).toFixed(1)}T`;
+        document.getElementById('estadosAnalizados').textContent = estadosFiltrados.length;
+        
+        // Actualizar barras de riesgo
+        const totalEstados = estadosFiltrados.length;
+        document.getElementById('altoRiesgoCount').textContent = contadorVulnerabilidad['muy-alta'] + contadorVulnerabilidad['alta'];
+        document.getElementById('moderadoRiesgoCount').textContent = contadorVulnerabilidad['media'];
+        document.getElementById('bajoRiesgoCount').textContent = contadorVulnerabilidad['baja'];
+        
+        const altoRiesgo = ((contadorVulnerabilidad['muy-alta'] + contadorVulnerabilidad['alta']) / totalEstados * 100);
+        const moderadoRiesgo = (contadorVulnerabilidad['media'] / totalEstados * 100);
+        const bajoRiesgo = (contadorVulnerabilidad['baja'] / totalEstados * 100);
+        
+        document.getElementById('altoRiesgoBar').style.width = `${altoRiesgo}%`;
+        document.getElementById('moderadoRiesgoBar').style.width = `${moderadoRiesgo}%`;
+        document.getElementById('bajoRiesgoBar').style.width = `${bajoRiesgo}%`;
+    }
+
+    // Función para filtrar por estado
+    function filtrarPorEstado(estado) {
+        if (filtros.estado === estado) {
+            filtros.estado = '';
+        } else {
+            filtros.estado = estado;
+        }
+        
+        document.getElementById('estadoSelect').value = filtros.estado;
+        actualizarMarcadores();
+        mostrarExito(filtros.estado ? `Filtrado por: ${estado}` : `Filtro removido: ${estado}`);
+    }
+
+    // Función para centrar en estado
+    function centrarEnEstado(estado) {
+        const coordenadas = coordenadasEstados[estado];
+        if (coordenadas) {
+            map.setView(coordenadas, 8);
+            mostrarExito(`Centrado en ${estado}`);
+        }
+    }
+
+    // Función para mostrar filtro activo
+    function mostrarFiltroActivo() {
+        const filtroActivo = document.getElementById('filtroActivo');
+        const filtroTexto = document.getElementById('filtroTexto');
+        
+        const filtrosTexto = [];
+        if (filtros.estado) filtrosTexto.push(`Estado: ${filtros.estado}`);
+        if (filtros.pibMinimo > 0) filtrosTexto.push(`PIB ≥ ${filtros.pibMinimo}B`);
+        if (filtros.vulnerabilidad) filtrosTexto.push(`Vulnerabilidad: ${filtros.vulnerabilidad}`);
+        if (filtros.sector) filtrosTexto.push(`Sector: ${filtros.sector}`);
+        
+        if (filtrosTexto.length > 0) {
+            filtroTexto.textContent = filtrosTexto.join(', ');
+            filtroActivo.style.display = 'block';
+        } else {
+            filtroActivo.style.display = 'none';
+        }
+    }
+
+    // Función para limpiar filtros
+    function limpiarFiltros() {
+        filtros = {
+            pibMinimo: 0,
+            sector: '',
+            estado: '',
+            vulnerabilidad: ''
+        };
+        
+        // Reiniciar controles
+        document.getElementById('pibRange').value = 0;
+        document.getElementById('pibValue').textContent = '$0B+';
+        document.getElementById('sectorSelect').value = '';
+        document.getElementById('estadoSelect').value = '';
+        document.getElementById('vulnerabilidadSelect').value = '';
+        
+        actualizarMarcadores();
+        mostrarExito('Todos los filtros han sido reiniciados');
+    }
+
+    // Función para exportar a CSV
+    function exportarCSV() {
+        mostrarSpinner(true);
+        
+        try {
+            let csvContent = "Estado,PIB (Billones),Insumos Utilizados,Valor Agregado,Formacion Capital,Activos Fijos,Vulnerabilidad\n";
+            
+            estadosFiltrados.forEach(estado => {
+                const datos = datosEconomicos[estado];
+                csvContent += `"${estado}","${datos.pib}","${datos.insumos}","${datos.valorAgregado}","${datos.capital}","${datos.activos}","${datos.vulnerabilidad}"\n`;
+            });
+
+            // Crear y descargar archivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `economia_mexico_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            mostrarExito(`Archivo CSV exportado con ${estadosFiltrados.length} estados`);
+        } catch (error) {
+            mostrarError('Error al exportar CSV: ' + error.message);
+        } finally {
+            mostrarSpinner(false);
+        }
+    }
+
+    // Función para generar reporte
+    function generarReporte() {
+        mostrarSpinner(true);
+        
+        try {
+            const totalPIB = estadosFiltrados.reduce((sum, estado) => sum + datosEconomicos[estado].pib, 0);
+            const promedióPIB = totalPIB / estadosFiltrados.length;
+            
+            const contadorVulnerabilidad = {
+                'muy-alta': 0,
+                'alta': 0,
+                'media': 0,
+                'baja': 0
+            };
+
+            estadosFiltrados.forEach(estado => {
+                contadorVulnerabilidad[datosEconomicos[estado].vulnerabilidad]++;
+            });
+
+            let reportContent = `REPORTE ECONÓMICO DE MÉXICO\n`;
+            reportContent += `Generado el: ${new Date().toLocaleDateString('es-MX')}\n\n`;
+            reportContent += `RESUMEN EJECUTIVO\n`;
+            reportContent += `================\n`;
+            reportContent += `Estados analizados: ${estadosFiltrados.length}\n`;
+            reportContent += `PIB Total: ${(totalPIB / 1000).toFixed(2)}T\n`;
+            reportContent += `PIB Promedio: ${promedióPIB.toFixed(1)}B\n\n`;
+            
+            reportContent += `DISTRIBUCIÓN POR VULNERABILIDAD\n`;
+            reportContent += `==============================\n`;
+            reportContent += `Muy Alta: ${contadorVulnerabilidad['muy-alta']} estados (${(contadorVulnerabilidad['muy-alta']/estadosFiltrados.length*100).toFixed(1)}%)\n`;
+            reportContent += `Alta: ${contadorVulnerabilidad['alta']} estados (${(contadorVulnerabilidad['alta']/estadosFiltrados.length*100).toFixed(1)}%)\n`;
+            reportContent += `Media: ${contadorVulnerabilidad['media']} estados (${(contadorVulnerabilidad['media']/estadosFiltrados.length*100).toFixed(1)}%)\n`;
+            reportContent += `Baja: ${contadorVulnerabilidad['baja']} estados (${(contadorVulnerabilidad['baja']/estadosFiltrados.length*100).toFixed(1)}%)\n\n`;
+            
+            reportContent += `DETALLE POR ESTADO\n`;
+            reportContent += `==================\n`;
+            
+            estadosFiltrados
+                .sort((a, b) => datosEconomicos[b].pib - datosEconomicos[a].pib)
+                .forEach((estado, index) => {
+                    const datos = datosEconomicos[estado];
+                    reportContent += `${index + 1}. ${estado}\n`;
+                    reportContent += `   PIB: ${datos.pib.toFixed(1)}B\n`;
+                    reportContent += `   Valor Agregado: ${datos.valorAgregado.toFixed(1)}B\n`;
+                    reportContent += `   Vulnerabilidad: ${datos.vulnerabilidad.toUpperCase()}\n\n`;
+                });
+
+            // Crear y descargar archivo
+            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `reporte_economia_mexico_${new Date().toISOString().split('T')[0]}.txt`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            mostrarExito(`Reporte generado con ${estadosFiltrados.length} estados`);
+        } catch (error) {
+            mostrarError('Error al generar reporte: ' + error.message);
+        } finally {
+            mostrarSpinner(false);
+        }
+    }
+
+    // Funciones auxiliares
+    function mostrarSpinner(mostrar) {
+        const spinner = document.getElementById('loadingSpinner');
+        spinner.style.display = mostrar ? 'block' : 'none';
+    }
+
+    function mostrarError(mensaje) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+        errorDiv.style.zIndex = '9999';
+        errorDiv.style.marginTop = '20px';
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    }
+
+    function mostrarExito(mensaje) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+        successDiv.style.zIndex = '9999';
+        successDiv.style.marginTop = '20px';
+        successDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.parentNode.removeChild(successDiv);
+            }
+        }, 3000);
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar mapa
+        initMap();
+        
+        // Poblar controles
+        poblarSelectEstados();
+        
+        // Cargar datos iniciales
+        actualizarMarcadores();
+
+        // Slider de PIB
+        const pibRange = document.getElementById('pibRange');
+        const pibValue = document.getElementById('pibValue');
+
+        pibRange.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            pibValue.textContent = value === 0 ? '$0B+' : `${value}B+`;
+        });
+
+        // Botón aplicar filtros
+        document.getElementById('aplicarFiltros').addEventListener('click', function() {
+            filtros.pibMinimo = parseInt(pibRange.value);
+            filtros.sector = document.getElementById('sectorSelect').value;
+            filtros.estado = document.getElementById('estadoSelect').value;
+            filtros.vulnerabilidad = document.getElementById('vulnerabilidadSelect').value;
+            
+            actualizarMarcadores();
+            mostrarExito('Filtros aplicados correctamente');
+        });
+
+        // Select de estados
+        document.getElementById('estadoSelect').addEventListener('change', function() {
+            filtros.estado = this.value;
+            actualizarMarcadores();
+            if (this.value) {
+                mostrarExito(`Filtrado por estado: ${this.value}`);
+            } else {
+                mostrarExito('Mostrando todos los estados');
+            }
+        });
+
+        // Botones de exportación
+        document.getElementById('btnExportarCSV').addEventListener('click', exportarCSV);
+        document.getElementById('btnExportarReporte').addEventListener('click', generarReporte);
+    });
+</script>
+
 </body>
 </html>

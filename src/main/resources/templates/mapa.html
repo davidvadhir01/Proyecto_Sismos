@@ -6,51 +6,110 @@
     <title>Mapa de Sismos en México</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         #map {
             height: 600px;
             width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .info-label {
             font-weight: bold;
         }
-
-
-
-        /*Este codiguito es de style.css pero me dio flojera pasarlo a un documento*/
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f8f9fa;
         }
-
         .navbar {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
         .card {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 10px;
         }
-
         .dropdown-item.active {
             background-color: #0d6efd;
             color: white;
         }
-
-        #map {
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
         }
-
-
-
-        
+        .magnitude-legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #333;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .btn-filter {
+            margin: 5px;
+        }
+        .filter-active {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+            color: white !important;
+        }
+        .estado-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .estado-card:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+        }
+        .estado-card.selected {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .estado-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .filtro-activo {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">Sismos México</a>
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-globe-americas me-2"></i>SismoMex
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -59,12 +118,18 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/">Inicio</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/mapa">Mapa de Sismos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/mapas">Análisis Avanzado</a>
+                </li>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                         Filtrar por Año
                     </a>
-                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="/mapa">Todos</a></li>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/mapa" th:classappend="${selectedYear == null ? 'active' : ''}">Todos los años</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li th:each="year : ${years}">
                             <a class="dropdown-item" th:href="@{/mapa(year=${year})}"
@@ -78,72 +143,153 @@
     </div>
 </nav>
 
-<div class="container mt-4">
+<!-- Spinner de carga -->
+<div class="loading-spinner" id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<div class="container-fluid mt-4">
     <div class="row mb-4">
-        <div class="col-md-6">
-            <h1 th:if="${selectedYear != null}" th:text="'Sismos en México - ' + ${selectedYear}"></h1>
-            <h1 th:unless="${selectedYear != null}">Todos los Sismos en México</h1>
+        <div class="col-md-8">
+            <h1 class="mb-3">
+                <i class="fas fa-map-marked-alt text-primary me-2"></i>
+                <span th:if="${selectedYear != null}" th:text="'Sismos en México - ' + ${selectedYear}"></span>
+                <span th:unless="${selectedYear != null}">Todos los Sismos en México</span>
+            </h1>
+            
+            <!-- Filtro activo -->
+            <div id="filtroActivo" class="filtro-activo" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Filtro aplicado:</strong> <span id="filtroTexto"></span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="limpiarFiltros()">
+                        <i class="fas fa-times"></i> Quitar filtro
+                    </button>
+                </div>
+            </div>
+            
+            <p class="text-muted">
+                <span>Total de sismos: </span>
+                <strong id="totalSismosDisplay">Cargando...</strong>
+            </p>
         </div>
-        <div class="col-md-6 text-end">
-            <div class="btn-group">
-                <button id="btnMagnitud" class="btn btn-outline-secondary">Filtrar por Magnitud</button>
-                <button id="btnProfundidad" class="btn btn-outline-secondary">Filtrar por Profundidad</button>
+        <div class="col-md-4 text-end">
+            <div class="btn-group" role="group">
+                <button id="btnMagnitudFilter" class="btn btn-outline-primary btn-filter">
+                    <i class="fas fa-filter me-1"></i>Magnitud ≥5.0
+                </button>
+                <button id="btnResetFilters" class="btn btn-outline-secondary btn-filter">
+                    <i class="fas fa-refresh me-1"></i>Reiniciar
+                </button>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-md-9">
-            <div id="map"></div>
-        </div>
-        <div class="col-md-3">
+        <div class="col-lg-9">
             <div class="card">
-                <div class="card-header bg-primary text-white">
-                    Información del Mapa
+                <div class="card-body p-0">
+                    <div id="map" class="position-relative">
+                        <!-- El mapa se carga aquí -->
+                    </div>
                 </div>
-                <div class="card-body">
+            </div>
+        </div>
+        
+        <div class="col-lg-3">
+            <!-- Estadísticas -->
+            <div class="stats-card mb-4">
+                <h5><i class="fas fa-chart-bar me-2"></i>Estadísticas</h5>
+                <div class="mt-3">
                     <p><span class="info-label">Total de sismos:</span> <span id="totalSismos">Cargando...</span></p>
                     <p><span class="info-label">Magnitud promedio:</span> <span id="magnitudPromedio">Cargando...</span></p>
+                    <p><span class="info-label">Magnitud máxima:</span> <span id="magnitudMaxima">Cargando...</span></p>
                     <p><span class="info-label">Estado con más sismos:</span> <span id="estadoMasSismos">Cargando...</span></p>
-
-                    <hr>
-
-                    <div class="mb-3">
-                        <label class="form-label">Magnitud mínima</label>
-                        <input type="range" class="form-range" id="magnitudRange" min="0" max="10" step="0.1" value="0">
-                        <div class="d-flex justify-content-between">
-                            <span>0</span>
-                            <span id="magnitudValue">0</span>
-                            <span>10</span>
-                        </div>
-                    </div>
-
-                    <button id="resetFilters" class="btn btn-secondary btn-sm">Reiniciar Filtros</button>
                 </div>
             </div>
 
-            <div class="card mt-3">
+            <!-- Filtros -->
+            <div class="card mb-4">
                 <div class="card-header bg-info text-white">
-                    Leyenda
+                    <h6><i class="fas fa-sliders-h me-2"></i>Filtros Avanzados</h6>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div style="width: 20px; height: 20px; background-color: #ff0000; border-radius: 50%; margin-right: 10px;"></div>
-                        <span>Magnitud ≥ 6.0</span>
+                    <div class="mb-3">
+                        <label class="form-label">Magnitud mínima</label>
+                        <input type="range" class="form-range" id="magnitudRange" 
+                               min="0" max="10" step="0.1" value="0">
+                        <div class="d-flex justify-content-between">
+                            <span>0</span>
+                            <span id="magnitudValue">0.0</span>
+                            <span>10</span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center mb-2">
-                        <div style="width: 20px; height: 20px; background-color: #ff9900; border-radius: 50%; margin-right: 10px;"></div>
-                        <span>Magnitud 5.0-5.9</span>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Filtrar por Estado</label>
+                        <select class="form-select" id="estadoSelect">
+                            <option value="">Todos los estados</option>
+                        </select>
                     </div>
-                    <div class="d-flex align-items-center mb-2">
-                        <div style="width: 20px; height: 20px; background-color: #ffff00; border-radius: 50%; margin-right: 10px;"></div>
-                        <span>Magnitud 4.0-4.9</span>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Profundidad máxima (km)</label>
+                        <input type="range" class="form-range" id="profundidadRange" 
+                               min="0" max="300" step="10" value="300">
+                        <div class="d-flex justify-content-between">
+                            <span>0</span>
+                            <span id="profundidadValue">300</span>
+                            <span>300</span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-center">
-                        <div style="width: 20px; height: 20px; background-color: #00ff00; border-radius: 50%; margin-right: 10px;"></div>
-                        <span>Magnitud < 4.0</span>
+
+                    <button id="aplicarFiltros" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Estados con Estadísticas -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h6><i class="fas fa-map-marker-alt me-2"></i>Sismos por Estado</h6>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <div id="estadosLista">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando estados...
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Leyenda -->
+            <div class="magnitude-legend mt-4">
+                <h6><strong>Leyenda por Magnitud</strong></h6>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #dc3545;"></div>
+                    <span>Magnitud ≥ 6.0 (Fuerte)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #fd7e14;"></div>
+                    <span>Magnitud 5.0-5.9 (Moderado)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ffc107;"></div>
+                    <span>Magnitud 4.0-4.9 (Leve)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #20c997;"></div>
+                    <span>Magnitud 3.0-3.9 (Menor)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #28a745;"></div>
+                    <span>Magnitud < 3.0 (Micro)</span>
+                </div>
+                <small class="text-muted">El tamaño del círculo indica la magnitud</small>
             </div>
         </div>
     </div>
@@ -152,85 +298,256 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script th:inline="javascript">
+    // Variables globales
     const selectedYear = /*[[${selectedYear}]]*/ null;
-    const apiUrl = selectedYear ? `/api/sismos?year=${selectedYear}` : '/api/sismos';
-</script>
-<script src="/js/map.js"></script>
+    const apiUrl = '/api/sismos/filtrados';
+    const estadisticasUrl = '/api/sismos/estadisticas';
+    const estadosUrl = '/api/sismos/estados';
+    
+    // Variables del mapa
+    let map;
+    let markersLayer;
+    let sismos = [];
+    let sismosOriginales = [];
+    let estadosPorSismos = {};
+    let filtros = {
+        minMagnitud: 0,
+        maxMagnitud: 10,
+        maxProfundidad: 300,
+        estado: '',
+        año: selectedYear
+    };
 
+    // Inicializar el mapa
+    function initMap() {
+        map = L.map('map').setView([23.6345, -102.5528], 5);
 
-<script>
-
-    // map.js
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar el mapa centrado en México
-        const map = L.map('map').setView([23.6345, -102.5528], 5);
-
-        // Añadir la capa de OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Crear un grupo de capas para los marcadores
-        const markersLayer = L.layerGroup().addTo(map);
+        markersLayer = L.layerGroup().addTo(map);
+    }
 
-        // Variables para almacenar los datos y filtros
-        let sismos = [];
-        let minMagnitud = 0;
+    // Función para obtener el color según la magnitud
+    function getColor(magnitud) {
+        if (magnitud >= 6.0) return '#dc3545'; // Rojo - Fuerte
+        if (magnitud >= 5.0) return '#fd7e14'; // Naranja - Moderado
+        if (magnitud >= 4.0) return '#ffc107'; // Amarillo - Leve
+        if (magnitud >= 3.0) return '#20c997'; // Verde claro - Menor
+        return '#28a745'; // Verde - Micro
+    }
 
-        // Función para obtener el color según la magnitud
-        function getColor(magnitud) {
-            if (magnitud >= 6.0) return '#ff0000';
-            if (magnitud >= 5.0) return '#ff9900';
-            if (magnitud >= 4.0) return '#ffff00';
-            return '#00ff00';
-        }
+    // Función para obtener el tamaño del marcador según la magnitud
+    function getSize(magnitud) {
+        return Math.max(4, Math.min(magnitud * 4, 25));
+    }
 
-        // Función para obtener el tamaño del marcador según la magnitud
-        function getSize(magnitud) {
-            return Math.max(5, magnitud * 2);
-        }
+    // Función para obtener descripción del nivel de riesgo
+    function getNivelRiesgo(magnitud) {
+        if (magnitud >= 7.0) return { nivel: 'CRÍTICO', clase: 'danger' };
+        if (magnitud >= 6.0) return { nivel: 'ALTO', clase: 'danger' };
+        if (magnitud >= 5.0) return { nivel: 'MEDIO', clase: 'warning' };
+        if (magnitud >= 4.0) return { nivel: 'BAJO', clase: 'info' };
+        return { nivel: 'MÍNIMO', clase: 'success' };
+    }
 
-        // Función para actualizar los marcadores según los filtros
-        function updateMarkers() {
-            markersLayer.clearLayers();
-
-            // Filtrar sismos por magnitud mínima
-            const sismosFiltrados = sismos.filter(sismo => sismo.magnitud >= minMagnitud);
-
-            // Actualizar estadísticas
-            document.getElementById('totalSismos').textContent = sismosFiltrados.length;
-
-            if (sismosFiltrados.length > 0) {
-                // Calcular magnitud promedio
-                const magnitudPromedio = sismosFiltrados.reduce((sum, sismo) => sum + sismo.magnitud, 0) / sismosFiltrados.length;
-                document.getElementById('magnitudPromedio').textContent = magnitudPromedio.toFixed(2);
-
-                // Encontrar estado con más sismos
-                const estadosCount = {};
-                sismosFiltrados.forEach(sismo => {
-                    if (sismo.estado) {
-                        estadosCount[sismo.estado] = (estadosCount[sismo.estado] || 0) + 1;
-                    }
-                });
-
-                let estadoMasSismos = '';
-                let maxCount = 0;
-
-                for (const estado in estadosCount) {
-                    if (estadosCount[estado] > maxCount) {
-                        maxCount = estadosCount[estado];
-                        estadoMasSismos = estado;
-                    }
+    // Función para cargar sismos con filtros
+    function cargarSismos() {
+        mostrarSpinner(true);
+        
+        const params = new URLSearchParams();
+        if (filtros.estado) params.append('estado', filtros.estado);
+        if (filtros.minMagnitud > 0) params.append('minMagnitud', filtros.minMagnitud);
+        if (filtros.maxMagnitud < 10) params.append('maxMagnitud', filtros.maxMagnitud);
+        if (filtros.año) params.append('año', filtros.año);
+        
+        const url = `${apiUrl}?${params.toString()}`;
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
                 }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Sismos cargados:', data.length);
+                sismosOriginales = data;
+                sismos = [...data];
+                
+                // Poblar select de estados y lista
+                poblarSelectEstados();
+                generarListaEstados();
+                
+                // Actualizar marcadores y estadísticas
+                actualizarMarcadores();
+                cargarEstadisticas();
+                
+                // Mostrar filtro activo si hay uno
+                mostrarFiltroActivo();
+            })
+            .catch(error => {
+                console.error('Error al cargar los datos de sismos:', error);
+                mostrarError('Error al cargar los datos de sismos: ' + error.message);
+            })
+            .finally(() => {
+                mostrarSpinner(false);
+            });
+    }
 
-                document.getElementById('estadoMasSismos').textContent = estadoMasSismos;
-            } else {
-                document.getElementById('magnitudPromedio').textContent = 'N/A';
-                document.getElementById('estadoMasSismos').textContent = 'N/A';
+    // Función para poblar el select de estados
+    function poblarSelectEstados() {
+        const estadoSelect = document.getElementById('estadoSelect');
+        const estados = [...new Set(sismosOriginales
+            .map(sismo => sismo.estado)
+            .filter(estado => estado && estado.trim() !== '')
+        )].sort();
+        
+        estadoSelect.innerHTML = '<option value="">Todos los estados</option>';
+        
+        estados.forEach(estado => {
+            const option = document.createElement('option');
+            option.value = estado;
+            option.textContent = estado;
+            if (estado === filtros.estado) {
+                option.selected = true;
             }
+            estadoSelect.appendChild(option);
+        });
+    }
 
-            // Añadir marcadores al mapa
-            sismosFiltrados.forEach(sismo => {
+    // Función para generar lista de estados con estadísticas
+    function generarListaEstados() {
+        // Contar sismos por estado
+        estadosPorSismos = {};
+        sismos.forEach(sismo => {
+            if (sismo.estado && sismo.estado.trim()) {
+                if (!estadosPorSismos[sismo.estado]) {
+                    estadosPorSismos[sismo.estado] = {
+                        count: 0,
+                        maxMagnitud: 0,
+                        sismos: []
+                    };
+                }
+                estadosPorSismos[sismo.estado].count++;
+                estadosPorSismos[sismo.estado].sismos.push(sismo);
+                if (sismo.magnitud > estadosPorSismos[sismo.estado].maxMagnitud) {
+                    estadosPorSismos[sismo.estado].maxMagnitud = sismo.magnitud;
+                }
+            }
+        });
+
+        // Ordenar estados por cantidad de sismos
+        const estadosOrdenados = Object.keys(estadosPorSismos)
+            .sort((a, b) => estadosPorSismos[b].count - estadosPorSismos[a].count);
+
+        // Generar HTML para la lista
+        const listaContainer = document.getElementById('estadosLista');
+        listaContainer.innerHTML = '';
+
+        if (estadosOrdenados.length === 0) {
+            listaContainer.innerHTML = '<p class="text-muted text-center">No hay sismos que mostrar</p>';
+            return;
+        }
+
+        estadosOrdenados.forEach(estado => {
+            const stats = estadosPorSismos[estado];
+            const isSelected = filtros.estado === estado;
+            
+            const estadoCard = document.createElement('div');
+            estadoCard.className = `estado-card ${isSelected ? 'selected' : ''}`;
+            estadoCard.onclick = () => filtrarPorEstado(estado);
+            
+            estadoCard.innerHTML = `
+                <div class="estado-stats">
+                    <div>
+                        <strong>${estado}</strong>
+                        <br>
+                        <small>Max: ${stats.maxMagnitud.toFixed(1)}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">${stats.count}</span>
+                    </div>
+                </div>
+            `;
+            
+            listaContainer.appendChild(estadoCard);
+        });
+    }
+
+    // Función para filtrar por estado
+    function filtrarPorEstado(estado) {
+        if (filtros.estado === estado) {
+            // Si ya está seleccionado, deseleccionar
+            filtros.estado = '';
+        } else {
+            // Seleccionar nuevo estado
+            filtros.estado = estado;
+        }
+        
+        document.getElementById('estadoSelect').value = filtros.estado;
+        cargarSismos();
+        mostrarExito(`Filtro ${filtros.estado ? 'aplicado' : 'removido'} para: ${estado}`);
+    }
+
+    // Función para mostrar filtro activo
+    function mostrarFiltroActivo() {
+        const filtroActivo = document.getElementById('filtroActivo');
+        const filtroTexto = document.getElementById('filtroTexto');
+        
+        const filtrosTexto = [];
+        if (filtros.estado) filtrosTexto.push(`Estado: ${filtros.estado}`);
+        if (filtros.minMagnitud > 0) filtrosTexto.push(`Magnitud ≥ ${filtros.minMagnitud}`);
+        if (filtros.maxMagnitud < 10) filtrosTexto.push(`Magnitud ≤ ${filtros.maxMagnitud}`);
+        if (filtros.maxProfundidad < 300) filtrosTexto.push(`Profundidad ≤ ${filtros.maxProfundidad}km`);
+        if (filtros.año) filtrosTexto.push(`Año: ${filtros.año}`);
+        
+        if (filtrosTexto.length > 0) {
+            filtroTexto.textContent = filtrosTexto.join(', ');
+            filtroActivo.style.display = 'block';
+        } else {
+            filtroActivo.style.display = 'none';
+        }
+    }
+
+    // Función para limpiar filtros
+    function limpiarFiltros() {
+        filtros = {
+            minMagnitud: 0,
+            maxMagnitud: 10,
+            maxProfundidad: 300,
+            estado: '',
+            año: selectedYear
+        };
+        
+        // Reiniciar controles
+        document.getElementById('magnitudRange').value = 0;
+        document.getElementById('magnitudValue').textContent = '0.0';
+        document.getElementById('profundidadRange').value = 300;
+        document.getElementById('profundidadValue').textContent = '300';
+        document.getElementById('estadoSelect').value = '';
+        
+        cargarSismos();
+        mostrarExito('Todos los filtros han sido reiniciados');
+    }
+
+    // Función para actualizar los marcadores según los filtros
+    function actualizarMarcadores() {
+        markersLayer.clearLayers();
+
+        // Aplicar filtros adicionales de profundidad
+        const sismosFiltrados = sismos.filter(sismo => {
+            return (sismo.profundidad || 0) <= filtros.maxProfundidad;
+        });
+
+        console.log('Sismos después de filtrar:', sismosFiltrados.length);
+
+        // Añadir marcadores al mapa
+        sismosFiltrados.forEach(sismo => {
+            if (sismo.latitud && sismo.longitud) {
+                const riesgo = getNivelRiesgo(sismo.magnitud);
+                
                 const circle = L.circleMarker([sismo.latitud, sismo.longitud], {
                     radius: getSize(sismo.magnitud),
                     fillColor: getColor(sismo.magnitud),
@@ -240,63 +557,253 @@
                     fillOpacity: 0.8
                 });
 
-                const fecha = new Date(sismo.fecha);
-                circle.bindPopup(`
-                <strong>Fecha:</strong> ${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}<br>
-                <strong>Magnitud:</strong> ${sismo.magnitud}<br>
-                <strong>Profundidad:</strong> ${sismo.profundidad} km<br>
-                <strong>Localización:</strong> ${sismo.referencia || 'No disponible'}<br>
-                <strong>Estado:</strong> ${sismo.estado || 'No disponible'}
-            `);
+                const fecha = sismo.fecha ? new Date(sismo.fecha) : new Date();
+                const hora = sismo.horaUtc || 'N/A';
+                
+                const popupContent = `
+                    <div class="text-center">
+                        <h6><strong>Sismo en ${sismo.estado || 'Ubicación desconocida'}</strong></h6>
+                        <div class="mb-2">
+                            <span class="badge bg-${riesgo.clase} fs-6">${sismo.magnitud}</span>
+                            <small class="text-muted ms-2">Riesgo ${riesgo.nivel}</small>
+                        </div>
+                        <div class="text-start">
+                            <p class="mb-1">
+                                <i class="fas fa-calendar text-primary"></i> 
+                                <strong>Fecha:</strong> ${fecha.toLocaleDateString('es-MX')}
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-clock text-primary"></i> 
+                                <strong>Hora UTC:</strong> ${hora}
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-tachometer-alt text-warning"></i> 
+                                <strong>Magnitud:</strong> ${sismo.magnitud} (${riesgo.nivel})
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-arrows-alt-v text-info"></i> 
+                                <strong>Profundidad:</strong> ${sismo.profundidad || 'N/A'} km
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-map-marker-alt text-success"></i> 
+                                <strong>Coordenadas:</strong> ${sismo.latitud.toFixed(4)}, ${sismo.longitud.toFixed(4)}
+                            </p>
+                            ${sismo.referencia ? `
+                            <p class="mb-0">
+                                <i class="fas fa-info-circle text-secondary"></i> 
+                                <strong>Referencia:</strong><br>
+                                <small>${sismo.referencia}</small>
+                            </p>` : ''}
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="centrarEnPunto(${sismo.latitud}, ${sismo.longitud})">
+                                <i class="fas fa-crosshairs"></i> Centrar
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="filtrarPorEstado('${sismo.estado}')">
+                                <i class="fas fa-filter"></i> Filtrar ${sismo.estado}
+                            </button>
+                        </div>
+                    </div>
+                `;
 
+                circle.bindPopup(popupContent, { maxWidth: 300 });
                 markersLayer.addLayer(circle);
-            });
-        }
+                
+                // Agregar evento hover para mostrar información rápida
+                circle.on('mouseover', function() {
+                    this.bindTooltip(`${sismo.estado}: Magnitud ${sismo.magnitud}`, {
+                        permanent: false,
+                        direction: 'top'
+                    }).openTooltip();
+                });
+            }
+        });
 
-        // Cargar los datos de sismos
-        fetch(apiUrl)
+        // Actualizar contador en la interfaz
+        document.getElementById('totalSismos').textContent = sismosFiltrados.length;
+        document.getElementById('totalSismosDisplay').textContent = sismosFiltrados.length;
+    }
+
+    // Función para cargar estadísticas
+    function cargarEstadisticas() {
+        const params = new URLSearchParams();
+        if (filtros.estado) params.append('estado', filtros.estado);
+        if (filtros.año) params.append('year', filtros.año);
+        
+        fetch(`${estadisticasUrl}?${params.toString()}`)
             .then(response => response.json())
             .then(data => {
-                sismos = data;
-                updateMarkers();
+                document.getElementById('totalSismos').textContent = data.totalSismos || 0;
+                document.getElementById('magnitudPromedio').textContent = data.magnitudPromedio || 'N/A';
+                document.getElementById('magnitudMaxima').textContent = data.magnitudMaxima || 'N/A';
+                document.getElementById('estadoMasSismos').textContent = data.estadoMasSismos || 'N/A';
             })
             .catch(error => {
-                console.error('Error al cargar los datos de sismos:', error);
-                document.getElementById('totalSismos').textContent = 'Error al cargar';
+                console.error('Error al cargar estadísticas:', error);
+                document.getElementById('totalSismos').textContent = 'Error';
+                document.getElementById('magnitudPromedio').textContent = 'Error';
+                document.getElementById('magnitudMaxima').textContent = 'Error';
+                document.getElementById('estadoMasSismos').textContent = 'Error';
             });
+    }
 
-        // Event listener para el slider de magnitud
+    // Función para mostrar/ocultar spinner
+    function mostrarSpinner(mostrar) {
+        const spinner = document.getElementById('loadingSpinner');
+        spinner.style.display = mostrar ? 'block' : 'none';
+    }
+
+    // Función para mostrar errores
+    function mostrarError(mensaje) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+        errorDiv.style.zIndex = '9999';
+        errorDiv.style.marginTop = '20px';
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    }
+
+    // Función para mostrar éxito
+    function mostrarExito(mensaje) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+        successDiv.style.zIndex = '9999';
+        successDiv.style.marginTop = '20px';
+        successDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.parentNode.removeChild(successDiv);
+            }
+        }, 3000);
+    }
+
+    // Funciones auxiliares para interacción con el mapa
+    function centrarEnPunto(lat, lng) {
+        map.setView([lat, lng], 10);
+        mostrarExito('Mapa centrado en el punto seleccionado');
+    }
+
+    // Event listeners para filtros
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar mapa
+        initMap();
+        
+        // Cargar datos iniciales
+        cargarSismos();
+
+        // Slider de magnitud mínima
         const magnitudRange = document.getElementById('magnitudRange');
         const magnitudValue = document.getElementById('magnitudValue');
 
         magnitudRange.addEventListener('input', function() {
-            minMagnitud = parseFloat(this.value);
-            magnitudValue.textContent = minMagnitud;
-            updateMarkers();
+            magnitudValue.textContent = parseFloat(this.value).toFixed(1);
         });
 
-        // Botón para reiniciar filtros
-        document.getElementById('resetFilters').addEventListener('click', function() {
-            minMagnitud = 0;
-            magnitudRange.value = 0;
-            magnitudValue.textContent = '0';
-            updateMarkers();
+        // Slider de profundidad
+        const profundidadRange = document.getElementById('profundidadRange');
+        const profundidadValue = document.getElementById('profundidadValue');
+
+        profundidadRange.addEventListener('input', function() {
+            profundidadValue.textContent = this.value;
         });
 
-        // Filtros adicionales
-        document.getElementById('btnMagnitud').addEventListener('click', function() {
-            sismos.sort((a, b) => b.magnitud - a.magnitud);
-            updateMarkers();
+        // Botón aplicar filtros
+        document.getElementById('aplicarFiltros').addEventListener('click', function() {
+            filtros.minMagnitud = parseFloat(magnitudRange.value);
+            filtros.maxProfundidad = parseInt(profundidadRange.value);
+            filtros.estado = document.getElementById('estadoSelect').value;
+            
+            cargarSismos();
+            mostrarExito('Filtros aplicados correctamente');
         });
 
-        document.getElementById('btnProfundidad').addEventListener('click', function() {
-            sismos.sort((a, b) => b.profundidad - a.profundidad);
-            updateMarkers();
+        // Select de estados
+        document.getElementById('estadoSelect').addEventListener('change', function() {
+            filtros.estado = this.value;
+            cargarSismos();
+            if (this.value) {
+                mostrarExito(`Filtrado por estado: ${this.value}`);
+            } else {
+                mostrarExito('Mostrando todos los estados');
+            }
+        });
+
+        // Filtros rápidos
+        document.getElementById('btnMagnitudFilter').addEventListener('click', function() {
+            filtros.minMagnitud = 5.0;
+            magnitudRange.value = 5.0;
+            magnitudValue.textContent = '5.0';
+            cargarSismos();
+            
+            this.classList.add('filter-active');
+            setTimeout(() => this.classList.remove('filter-active'), 1000);
+            mostrarExito('Mostrando solo sismos de magnitud ≥ 5.0');
+        });
+
+        // Botón reiniciar filtros
+        document.getElementById('btnResetFilters').addEventListener('click', function() {
+            limpiarFiltros();
+            
+            this.classList.add('filter-active');
+            setTimeout(() => this.classList.remove('filter-active'), 1000);
         });
     });
 
-
-
+    // Función para centrar mapa en un estado específico
+    function centrarEnEstado(estado) {
+        const coordenadasEstados = {
+            'OAX': [17.0732, -96.7266],
+            'GRO': [17.4391, -99.5451],
+            'CHIS': [16.7569, -93.1292],
+            'MICH': [19.5665, -101.7068],
+            'JAL': [20.6595, -103.3494],
+            'COL': [19.2452, -103.7240],
+            'VER': [19.1738, -96.1342],
+            'CDMX': [19.4326, -99.1332],
+            'MEX': [19.3907, -99.5036],
+            'PUE': [19.0414, -98.2063],
+            'HGO': [20.0911, -98.7624],
+            'QRO': [20.5888, -100.3899],
+            'GTO': [21.0190, -101.2574],
+            'AGS': [21.8853, -102.2916],
+            'SLP': [22.1565, -100.9855],
+            'ZAC': [22.7709, -102.5832],
+            'NAY': [21.7514, -104.8455],
+            'SIN': [24.8069, -107.4458],
+            'DUR': [24.0277, -104.6532],
+            'CHIH': [28.6353, -106.0889],
+            'COAH': [25.4232, -101.0053],
+            'NL': [25.5922, -99.9962],
+            'TAMPS': [23.7369, -99.1411],
+            'BCN': [30.8406, -115.2838],
+            'BCS': [26.0444, -111.6660],
+            'SON': [29.2972, -110.3309],
+            'YUC': [20.7099, -89.0943],
+            'QROO': [19.1817, -88.4791],
+            'CAM': [19.8301, -90.5349],
+            'TAB': [17.8409, -92.6189],
+            'TLAX': [19.3139, -98.2404]
+        };
+        
+        if (coordenadasEstados[estado]) {
+            map.setView(coordenadasEstados[estado], 8);
+            mostrarExito(`Centrado en ${estado}`);
+        }
+    }
 </script>
 
 </body>

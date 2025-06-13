@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alertas Sísmicas - SismoMex</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .alert-card {
+            border-left: 5px solid;
+            transition: transform 0.3s;
+        }
+        .alert-card:hover {
+            transform: translateY(-2px);
+        }
+        .alert-high { border-left-color: #dc3545; }
+        .alert-medium { border-left-color: #fd7e14; }
+        .alert-low { border-left-color: #ffc107; }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        .status-active { background-color: #28a745; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-globe-americas me-2"></i>SismoMex
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Inicio</a>
+                <a class="nav-link" href="/mapa">Mapa</a>
+                <a class="nav-link" href="/mapas">DataWarehouse</a>
+                <a class="nav-link active" href="/alerts">Alertas</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="mb-3">
+                    <i class="fas fa-bell text-warning me-3"></i>
+                    Sistema de Alertas Sísmicas
+                    <span class="status-indicator status-active"></span>
+                    <small class="text-success">ACTIVO</small>
+                </h1>
+                <p class="lead text-muted">
+                    Monitoreo continuo de actividad sísmica con alertas automáticas para eventos significativos
+                </p>
+            </div>
+        </div>
+
+        <!-- Estado del Sistema -->
+        <div class="row mb-5">
+            <div class="col-md-4">
+                <div class="card text-center border-success">
+                    <div class="card-body">
+                        <i class="fas fa-satellite-dish text-success" style="font-size: 2rem;"></i>
+                        <h5 class="mt-3">Sistema Activo</h5>
+                        <p class="text-success mb-0">Monitoreo 24/7</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center border-info">
+                    <div class="card-body">
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                        <h5 class="mt-3" th:text="${alertasActivas ?: 0}">0</h5>
+                        <p class="text-muted mb-0">Alertas Recientes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center border-primary">
+                    <div class="card-body">
+                        <i class="fas fa-map-marked-alt text-primary" style="font-size: 2rem;"></i>
+                        <h5 class="mt-3">32</h5>
+                        <p class="text-muted mb-0">Estados Monitoreados</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuración de Alertas -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5><i class="fas fa-cog me-2"></i>Configuración de Alertas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Magnitud Mínima para Alerta</label>
+                            <select class="form-select" id="magnitudMinima">
+                                <option value="4.0" selected>4.0 - Sismos leves</option>
+                                <option value="5.0">5.0 - Sismos moderados</option>
+                                <option value="6.0">6.0 - Sismos fuertes</option>
+                                <option value="7.0">7.0 - Sismos mayores</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Zona de Interés</label>
+                            <select class="form-select" id="zonaInteres">
+                                <option value="nacional">Todo México</option>
+                                <option value="pacifico">Costa del Pacífico</option>
+                                <option value="centro">México Central</option>
+                                <option value="sur">México Sur</option>
+                            </select>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="alertasSonoras" checked>
+                            <label class="form-check-label" for="alertasSonoras">
+                                Alertas sonoras en el navegador
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="alertasVisuales" checked>
+                            <label class="form-check-label" for="alertasVisuales">
+                                Notificaciones visuales
+                            </label>
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="guardarConfiguracion()">
+                            <i class="fas fa-save me-2"></i>Guardar Configuración
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="fas fa-info-circle me-2"></i>Niveles de Alerta</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="badge bg-success me-3" style="width: 20px; height: 20px;"></div>
+                                <div>
+                                    <strong>Verde (Magnitud < 4.0)</strong><br>
+                                    <small>Actividad normal - Sin alerta</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="badge bg-warning me-3" style="width: 20px; height: 20px;"></div>
+                                <div>
+                                    <strong>Amarillo (Magnitud 4.0-4.9)</strong><br>
+                                    <small>Alerta preventiva - Monitoreo activo</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="badge bg-danger me-3" style="width: 20px; height: 20px;"></div>
+                                <div>
+                                    <strong>Rojo (Magnitud > 5.0)</strong><br>
+                                    <small>Alerta alta - Revisión inmediata</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sismos Recientes -->
+        <div class="row">
+            <div class="col-12">
+                <h3 class="mb-4"><i class="fas fa-clock text-primary me-2"></i>Actividad Sísmica Reciente</h3>
+                
+                <div th:if="${sismosRecientes != null and !sismosRecientes.empty}">
+                    <div th:each="sismo : ${sismosRecientes}" 
+                         class="card alert-card mb-3"
+                         th:classappend="${sismo.magnitud >= 5.0 ? 'alert-high' : (sismo.magnitud >= 4.0 ? 'alert-medium' : 'alert-low')}">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-2 text-center">
+                                    <span class="badge fs-5 p-3"
+                                          th:classappend="${sismo.magnitud >= 5.0 ? 'bg-danger' : (sismo.magnitud >= 4.0 ? 'bg-warning text-dark' : 'bg-success')}"
+                                          th:text="${sismo.magnitud}">0.0</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-1" th:text="${sismo.estado + ', México'}">Estado, México</h5>
+                                    <p class="text-muted mb-1" th:text="${sismo.referencia}">Referencia del sismo</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        <span th:text="${sismo.latitud + ', ' + sismo.longitud}">Coordenadas</span>
+                                    </small>
+                                </div>
+                                <div class="col-md-2">
+                                    <strong>Profundidad:</strong><br>
+                                    <span th:text="${sismo.profundidad + ' km'}">0 km</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <a href="/mapa" class="btn btn-outline-primary btn-sm w-100">
+                                        <i class="fas fa-map me-1"></i>Ver en Mapa
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div th:if="${sismosRecientes == null or sismosRecientes.empty}" class="text-center py-5">
+                    <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 text-success">Sin Alertas Activas</h4>
+                    <p class="text-muted">No hay sismos significativos en las últimas 24 horas</p>
+                    <a href="/mapa" class="btn btn-primary">
+                        <i class="fas fa-map me-2"></i>Ver Mapa General
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function guardarConfiguracion() {
+            const magnitud = document.getElementById('magnitudMinima').value;
+            const zona = document.getElementById('zonaInteres').value;
+            const sonoras = document.getElementById('alertasSonoras').checked;
+            const visuales = document.getElementById('alertasVisuales').checked;
+            
+            // Guardar en localStorage
+            localStorage.setItem('alertConfig', JSON.stringify({
+                magnitudMinima: magnitud,
+                zonaInteres: zona,
+                alertasSonoras: sonoras,
+                alertasVisuales: visuales
+            }));
+            
+            // Mostrar confirmación
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+            alert.style.zIndex = '9999';
+            alert.innerHTML = `
+                <i class="fas fa-check me-2"></i>Configuración guardada exitosamente
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 3000);
+        }
+        
+        // Cargar configuración guardada
+        document.addEventListener('DOMContentLoaded', function() {
+            const saved = localStorage.getItem('alertConfig');
+            if (saved) {
+                const config = JSON.parse(saved);
+                document.getElementById('magnitudMinima').value = config.magnitudMinima || '4.0';
+                document.getElementById('zonaInteres').value = config.zonaInteres || 'nacional';
+                document.getElementById('alertasSonoras').checked = config.alertasSonoras !== false;
+                document.getElementById('alertasVisuales').checked = config.alertasVisuales !== false;
+            }
+        });
+    </script>
+</body>
+</html>

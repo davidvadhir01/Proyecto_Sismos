@@ -1,450 +1,974 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análisis de Magnitudes Sísmicas - SismoMex</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
     <style>
-        .map-container {
+        #map {
             height: 600px;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #ff9500 0%, #ff7700 100%) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 10px;
+        }
+        
         .magnitude-card {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            background: linear-gradient(135deg, #ff9500 0%, #ff7700 100%);
             color: white;
-            border-radius: 15px;
+            border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
         }
-        .magnitude-indicator {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        
+        .filter-card {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9500 100%);
             color: white;
-            padding: 15px;
             border-radius: 10px;
-            text-align: center;
+            padding: 20px;
         }
-        .richter-scale {
+        
+        .events-card {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .big-number {
+            font-size: 4rem;
+            font-weight: bold;
+            line-height: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .estado-item {
             background: white;
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
         }
-        .scale-item {
+        
+        .estado-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+            border-left-color: #ff9500;
+        }
+        
+        .estado-item.selected {
+            background-color: #fff3cd;
+            border-left-color: #ff9500;
+        }
+        
+        .magnitud-baja { border-left-color: #28a745 !important; }
+        .magnitud-moderada { border-left-color: #ffc107 !important; }
+        .magnitud-fuerte { border-left-color: #fd7e14 !important; }
+        .magnitud-mayor { border-left-color: #dc3545 !important; }
+        .magnitud-destructiva { border-left-color: #721c24 !important; }
+        
+        .legend-item {
             display: flex;
             align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
+            margin-bottom: 8px;
         }
-        .scale-color {
+        
+        .legend-color {
             width: 20px;
             height: 20px;
             border-radius: 50%;
             margin-right: 10px;
+            border: 2px solid #333;
+        }
+        
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+        
+        .filtro-activo {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
+            color: white;
+        }
+        
+        .progress-custom {
+            height: 25px;
+            border-radius: 12px;
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        .progress-bar-custom {
+            border-radius: 12px;
+        }
+        
+        .metric-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .metric-baja {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        }
+        
+        .metric-moderada {
+            background: linear-gradient(135deg, #ffd43b 0%, #fab005 100%);
+        }
+        
+        .metric-fuerte {
+            background: linear-gradient(135deg, #ff922b 0%, #fd7e14 100%);
+        }
+        
+        .metric-mayor {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+        }
+        
+        .metric-destructiva {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        }
+        
+        .tendencia-card {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        }
+        
+        .eventos-table {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .evento-row {
+            transition: all 0.3s ease;
+        }
+        
+        .evento-row:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.02);
+        }
+        
+        .magnitud-badge {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .intensidad-badge {
+            font-size: 0.8em;
+            padding: 3px 8px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-globe-americas me-2"></i>SismoMex
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/">Inicio</a>
-                <a class="nav-link" href="/mapas">Análisis</a>
-                <a class="nav-link active" href="/mapas/magnitudes">Magnitudes</a>
-            </div>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-wave-square me-2"></i>SismoMex
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/mapa">Análisis</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/mapas/magnitudes">Magnitudes</a>
+                </li>
+            </ul>
         </div>
-    </nav>
+    </div>
+</nav>
 
-    <div class="container-fluid py-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1><i class="fas fa-tachometer-alt text-warning me-3"></i>Análisis de Magnitudes Sísmicas</h1>
-                    <a href="/mapas" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Volver a Análisis
-                    </a>
+<!-- Spinner de carga -->
+<div class="loading-spinner" id="loadingSpinner">
+    <div class="spinner-border text-warning" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-3">
+                <i class="fas fa-wave-square text-warning me-2"></i>
+                Análisis de Magnitudes Sísmicas
+            </h1>
+            
+            <!-- Filtro activo -->
+            <div id="filtroActivo" class="filtro-activo" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Filtros aplicados:</strong> <span id="filtroTexto"></span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="limpiarFiltros()">
+                        <i class="fas fa-times"></i> Quitar filtros
+                    </button>
                 </div>
             </div>
+            
+            <div class="d-flex align-items-center">
+                <button id="btnVolver" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left me-1"></i> Volver a Análisis
+                </button>
+            </div>
         </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group" role="group">
+                <button id="btnVerTendencias" class="btn export-btn">
+                    <i class="fas fa-chart-line me-1"></i>Ver Tendencias
+                </button>
+                <button id="btnExportarDatos" class="btn export-btn ms-2">
+                    <i class="fas fa-download me-1"></i>Exportar Datos
+                </button>
+            </div>
+        </div>
+    </div>
 
-        <div class="row">
-            <!-- Panel de Magnitudes -->
-            <div class="col-lg-3">
-                <div class="magnitude-card">
-                    <h5><i class="fas fa-chart-bar me-2"></i>Distribución de Magnitudes</h5>
-                    <div class="magnitude-indicator mt-3">
-                        <h3>6.2</h3>
-                        <p class="mb-0">Magnitud Máxima (2024)</p>
-                    </div>
-                    <div class="mt-3">
-                        <p><strong>Frecuencia por Magnitud:</strong></p>
-                        <ul class="list-unstyled">
-                            <li><i class="fas fa-circle text-success me-2"></i>2.0-3.9: 78% (12,450 sismos)</li>
-                            <li><i class="fas fa-circle text-warning me-2"></i>4.0-4.9: 18% (2,880 sismos)</li>
-                            <li><i class="fas fa-circle text-danger me-2"></i>5.0-5.9: 3.5% (560 sismos)</li>
-                            <li><i class="fas fa-circle text-dark me-2"></i>6.0+: 0.5% (80 sismos)</li>
-                        </ul>
+    <div class="row">
+        <div class="col-lg-9">
+            <!-- Mapa principal -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marked-alt me-2"></i>
+                        Mapa de Distribución de Magnitudes Sísmicas
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" class="position-relative">
+                        <!-- El mapa se carga aquí -->
                     </div>
                 </div>
-
-                <!-- Escala de Richter -->
-                <div class="richter-scale">
-                    <h6 class="text-center mb-3"><strong>Escala de Richter</strong></h6>
-                    <div class="scale-item">
-                        <div class="scale-color" style="background-color: #2ecc71;"></div>
-                        <div>
-                            <strong>2.0-2.9</strong><br>
-                            <small>Micro - No se siente</small>
+            </div>
+            
+            <!-- Métricas de magnitudes -->
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="metric-card metric-baja">
+                        <h4>12,450</h4>
+                        <small>Sismos 2.0-3.9</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card metric-moderada">
+                        <h4>2,880</h4>
+                        <small>Sismos 4.0-4.9</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card metric-fuerte">
+                        <h4>560</h4>
+                        <small>Sismos 5.0-5.9</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card metric-mayor">
+                        <h4>80</h4>
+                        <small>Sismos 6.0+</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card tendencia-card">
+                        <h4>4.2</h4>
+                        <small>Magnitud Promedio</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="metric-card tendencia-card">
+                        <h4>45</h4>
+                        <small>Sismos/mes 2024</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gráficos -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h6><i class="fas fa-chart-pie me-2"></i>Distribución por Magnitud</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="magnitudChart"></canvas>
+                            </div>
                         </div>
                     </div>
-                    <div class="scale-item">
-                        <div class="scale-color" style="background-color: #27ae60;"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6><i class="fas fa-chart-line me-2"></i>Tendencia Temporal</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="tendenciaChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabla de eventos significativos -->
+            <div class="card mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-list me-2"></i>Eventos Sísmicos Más Significativos (2024)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="eventos-table">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Magnitud</th>
+                                    <th>Ubicación</th>
+                                    <th>Profundidad</th>
+                                    <th>Intensidad</th>
+                                    <th>Daños</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventosTabla">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3">
+            <!-- Distribución de Magnitudes -->
+            <div class="magnitude-card">
+                <h5><i class="fas fa-chart-bar me-2"></i>Distribución de Magnitudes</h5>
+                <div class="big-number" id="magnitudMaxima">6.2</div>
+                <p class="mb-3">Magnitud Máxima (2024)</p>
+                
+                <div class="mt-3">
+                    <h6>Frecuencia por Magnitud:</h6>
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color" style="background-color: #28a745; width: 12px; height: 12px;"></div>
+                            <span class="ms-2">2.0-3.9: 78% (12,450 sismos)</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color" style="background-color: #ffc107; width: 12px; height: 12px;"></div>
+                            <span class="ms-2">4.0-4.9: 18% (2,880 sismos)</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color" style="background-color: #fd7e14; width: 12px; height: 12px;"></div>
+                            <span class="ms-2">5.0-5.9: 3.5% (560 sismos)</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color" style="background-color: #dc3545; width: 12px; height: 12px;"></div>
+                            <span class="ms-2">6.0+: 0.5% (80 sismos)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Escala de Richter -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6>Escala de Richter</h6>
+                </div>
+                <div class="card-body">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #28a745;"></div>
                         <div>
-                            <strong>3.0-3.9</strong><br>
+                            <strong>2.0-3.9</strong><br>
                             <small>Menor - Apenas perceptible</small>
                         </div>
                     </div>
-                    <div class="scale-item">
-                        <div class="scale-color" style="background-color: #f1c40f;"></div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffc107;"></div>
                         <div>
                             <strong>4.0-4.9</strong><br>
-                            <small>Leve - Vibraciones notables</small>
+                            <small>Ligero - Levemente perceptible</small>
                         </div>
                     </div>
-                    <div class="scale-item">
-                        <div class="scale-color" style="background-color: #e67e22;"></div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #fd7e14;"></div>
                         <div>
                             <strong>5.0-5.9</strong><br>
                             <small>Moderado - Daños menores</small>
                         </div>
                     </div>
-                    <div class="scale-item">
-                        <div class="scale-color" style="background-color: #e74c3c;"></div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #dc3545;"></div>
                         <div>
                             <strong>6.0-6.9</strong><br>
                             <small>Fuerte - Daños considerables</small>
                         </div>
                     </div>
-                    <div class="scale-item">
-                        <div class="scale-color" style="background-color: #8b0000;"></div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #721c24;"></div>
                         <div>
                             <strong>7.0+</strong><br>
                             <small>Mayor - Destrucción severa</small>
                         </div>
                     </div>
                 </div>
-
-                <div class="card mt-3">
-                    <div class="card-header bg-warning text-dark">
-                        <h6><i class="fas fa-filter me-2"></i>Filtros de Magnitud</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Rango de Magnitud</label>
-                            <select class="form-select">
-                                <option>Todas las magnitudes</option>
-                                <option>2.0 - 3.9 (Menores)</option>
-                                <option>4.0 - 4.9 (Leves)</option>
-                                <option>5.0 - 5.9 (Moderados)</option>
-                                <option>6.0 - 6.9 (Fuertes)</option>
-                                <option>7.0+ (Mayores)</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Período de Tiempo</label>
-                            <select class="form-select">
-                                <option>Último año</option>
-                                <option>Últimos 5 años</option>
-                                <option>Últimos 10 años</option>
-                                <option>Histórico completo</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Profundidad</label>
-                            <select class="form-select">
-                                <option>Todas las profundidades</option>
-                                <option>Superficial (0-70 km)</option>
-                                <option>Intermedio (70-300 km)</option>
-                                <option>Profundo (300+ km)</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-warning w-100">
-                            <i class="fas fa-search me-2"></i>Aplicar Filtros
-                        </button>
-                    </div>
-                </div>
             </div>
 
-            <!-- Mapa Principal -->
-            <div class="col-lg-9">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fas fa-map-marked-alt text-warning me-2"></i>
-                                Mapa de Distribución de Magnitudes Sísmicas
-                            </h5>
-                            <div>
-                                <button class="btn btn-sm btn-outline-warning me-2">
-                                    <i class="fas fa-chart-line me-1"></i>Ver Tendencias
-                                </button>
-                                <button class="btn btn-sm btn-warning">
-                                    <i class="fas fa-download me-1"></i>Exportar Datos
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div id="magnitudesMap" class="map-container"></div>
-                    </div>
+            <!-- Filtros de Magnitud -->
+            <div class="filter-card">
+                <h6><i class="fas fa-sliders-h me-2"></i>Filtros de Magnitud</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">Rango de Magnitud</label>
+                    <select class="form-select" id="magnitudSelect">
+                        <option value="">Todas las magnitudes</option>
+                        <option value="2.0-3.9">2.0-3.9 (Menor)</option>
+                        <option value="4.0-4.9">4.0-4.9 (Ligero)</option>
+                        <option value="5.0-5.9">5.0-5.9 (Moderado)</option>
+                        <option value="6.0-6.9">6.0-6.9 (Fuerte)</option>
+                        <option value="7.0+">7.0+ (Mayor)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Período de Tiempo</label>
+                    <select class="form-select" id="periodoSelect">
+                        <option value="ultimo-ano">Último año</option>
+                        <option value="ultimos-6-meses">Últimos 6 meses</option>
+                        <option value="ultimo-mes">Último mes</option>
+                        <option value="ultima-semana">Última semana</option>
+                        <option value="personalizado">Período personalizado</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Profundidad</label>
+                    <select class="form-select" id="profundidadSelect">
+                        <option value="">Todas las profundidades</option>
+                        <option value="superficial">Superficial (0-70 km)</option>
+                        <option value="intermedio">Intermedio (70-300 km)</option>
+                        <option value="profundo">Profundo (300+ km)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Filtrar por Estado</label>
+                    <select class="form-select" id="estadoSelect">
+                        <option value="">Todos los estados</option>
+                    </select>
                 </div>
 
-                <!-- Gráficos de Análisis -->
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header bg-warning text-dark">
-                                <h6><i class="fas fa-chart-pie me-2"></i>Distribución por Magnitud</h6>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="magnitudeDistributionChart" height="200"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header bg-info text-white">
-                                <h6><i class="fas fa-chart-line me-2"></i>Tendencia Temporal</h6>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="magnitudeTrendChart" height="200"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <button id="aplicarFiltros" class="btn btn-light w-100">
+                    <i class="fas fa-search me-2"></i>Aplicar Filtros
+                </button>
+            </div>
 
-                <!-- Estadísticas Detalladas -->
-                <div class="row mt-4">
-                    <div class="col-md-2">
-                        <div class="card text-center border-success">
-                            <div class="card-body">
-                                <h4 class="text-success">12,450</h4>
-                                <p class="mb-0 small">Sismos 2.0-3.9</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="card text-center border-warning">
-                            <div class="card-body">
-                                <h4 class="text-warning">2,880</h4>
-                                <p class="mb-0 small">Sismos 4.0-4.9</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="card text-center border-danger">
-                            <div class="card-body">
-                                <h4 class="text-danger">560</h4>
-                                <p class="mb-0 small">Sismos 5.0-5.9</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="card text-center border-dark">
-                            <div class="card-body">
-                                <h4 class="text-dark">80</h4>
-                                <p class="mb-0 small">Sismos 6.0+</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="card text-center border-primary">
-                            <div class="card-body">
-                                <h4 class="text-primary">4.2</h4>
-                                <p class="mb-0 small">Magnitud Promedio</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="card text-center border-info">
-                            <div class="card-body">
-                                <h4 class="text-info">45</h4>
-                                <p class="mb-0 small">Sismos/mes 2024</p>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Lista de Estados con Actividad Sísmica -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6><i class="fas fa-map-marker-alt me-2"></i>Actividad Sísmica por Estado</h6>
                 </div>
-
-                <!-- Tabla de Eventos Significativos -->
-                <div class="card mt-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Eventos Sísmicos Más Significativos (2024)</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Magnitud</th>
-                                        <th>Ubicación</th>
-                                        <th>Profundidad</th>
-                                        <th>Intensidad</th>
-                                        <th>Daños</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr class="table-danger">
-                                        <td>15 Mar 2024</td>
-                                        <td><span class="badge bg-danger">6.2</span></td>
-                                        <td>Oaxaca, México</td>
-                                        <td>45 km</td>
-                                        <td>VII (Muy fuerte)</td>
-                                        <td>Daños menores</td>
-                                    </tr>
-                                    <tr class="table-warning">
-                                        <td>08 Feb 2024</td>
-                                        <td><span class="badge bg-warning">5.8</span></td>
-                                        <td>Guerrero, México</td>
-                                        <td>25 km</td>
-                                        <td>VI (Fuerte)</td>
-                                        <td>Sin daños mayores</td>
-                                    </tr>
-                                    <tr class="table-warning">
-                                        <td>22 Jan 2024</td>
-                                        <td><span class="badge bg-warning">5.5</span></td>
-                                        <td>Chiapas, México</td>
-                                        <td>60 km</td>
-                                        <td>V (Moderado)</td>
-                                        <td>Sin daños</td>
-                                    </tr>
-                                    <tr>
-                                        <td>05 Jan 2024</td>
-                                        <td><span class="badge bg-warning">5.2</span></td>
-                                        <td>Michoacán, México</td>
-                                        <td>35 km</td>
-                                        <td>V (Moderado)</td>
-                                        <td>Sin daños</td>
-                                    </tr>
-                                    <tr>
-                                        <td>18 Dec 2023</td>
-                                        <td><span class="badge bg-warning">5.0</span></td>
-                                        <td>Jalisco, México</td>
-                                        <td>120 km</td>
-                                        <td>IV (Leve)</td>
-                                        <td>Sin daños</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div id="estadosLista">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando estados...
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Inicializar mapa de magnitudes
-        const magnitudesMap = L.map('magnitudesMap').setView([23.6345, -102.5528], 5);
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+<script>
+    // Datos sísmicos completos por estado (magnitudes y frecuencias)
+    const datosSismicos = {
+        'Aguascalientes': { magnitudPromedio: 3.2, sismosTotales: 125, magnitudMaxima: 4.8, sismos2024: 42, riesgoNivel: 'bajo' },
+        'Baja California': { magnitudPromedio: 4.1, sismosTotales: 890, magnitudMaxima: 6.2, sismos2024: 156, riesgoNivel: 'alto' },
+        'Baja California Sur': { magnitudPromedio: 3.8, sismosTotales: 320, magnitudMaxima: 5.4, sismos2024: 67, riesgoNivel: 'moderado' },
+        'Campeche': { magnitudPromedio: 2.9, sismosTotales: 89, magnitudMaxima: 4.2, sismos2024: 23, riesgoNivel: 'bajo' },
+        'Coahuila': { magnitudPromedio: 3.1, sismosTotales: 156, magnitudMaxima: 4.5, sismos2024: 38, riesgoNivel: 'bajo' },
+        'Colima': { magnitudPromedio: 4.5, sismosTotales: 1250, magnitudMaxima: 6.8, sismos2024: 287, riesgoNivel: 'muy-alto' },
+        'Chiapas': { magnitudPromedio: 4.3, sismosTotales: 2150, magnitudMaxima: 6.5, sismos2024: 445, riesgoNivel: 'muy-alto' },
+        'Chihuahua': { magnitudPromedio: 3.4, sismosTotales: 234, magnitudMaxima: 5.1, sismos2024: 56, riesgoNivel: 'moderado' },
+        'Ciudad de Mexico': { magnitudPromedio: 3.8, sismosTotales: 456, magnitudMaxima: 5.8, sismos2024: 89, riesgoNivel: 'alto' },
+        'Durango': { magnitudPromedio: 3.3, sismosTotales: 178, magnitudMaxima: 4.9, sismos2024: 42, riesgoNivel: 'moderado' },
+        'Guanajuato': { magnitudPromedio: 3.5, sismosTotales: 289, magnitudMaxima: 5.2, sismos2024: 67, riesgoNivel: 'moderado' },
+        'Guerrero': { magnitudPromedio: 4.6, sismosTotales: 3450, magnitudMaxima: 7.2, sismos2024: 678, riesgoNivel: 'muy-alto' },
+        'Hidalgo': { magnitudPromedio: 3.4, sismosTotales: 267, magnitudMaxima: 5.0, sismos2024: 58, riesgoNivel: 'moderado' },
+        'Jalisco': { magnitudPromedio: 4.2, sismosTotales: 1890, magnitudMaxima: 6.4, sismos2024: 345, riesgoNivel: 'alto' },
+        'Mexico': { magnitudPromedio: 3.9, sismosTotales: 567, magnitudMaxima: 5.9, sismos2024: 134, riesgoNivel: 'alto' },
+        'Michoacan': { magnitudPromedio: 4.4, sismosTotales: 2890, magnitudMaxima: 6.9, sismos2024: 534, riesgoNivel: 'muy-alto' },
+        'Morelos': { magnitudPromedio: 3.7, sismosTotales: 345, magnitudMaxima: 5.5, sismos2024: 78, riesgoNivel: 'moderado' },
+        'Nayarit': { magnitudPromedio: 3.9, sismosTotales: 567, magnitudMaxima: 5.7, sismos2024: 123, riesgoNivel: 'moderado' },
+        'Nuevo Leon': { magnitudPromedio: 3.2, sismosTotales: 134, magnitudMaxima: 4.6, sismos2024: 34, riesgoNivel: 'bajo' },
+        'Oaxaca': { magnitudPromedio: 4.7, sismosTotales: 4200, magnitudMaxima: 7.4, sismos2024: 823, riesgoNivel: 'muy-alto' },
+        'Puebla': { magnitudPromedio: 4.0, sismosTotales: 789, magnitudMaxima: 6.1, sismos2024: 167, riesgoNivel: 'alto' },
+        'Queretaro': { magnitudPromedio: 3.3, sismosTotales: 198, magnitudMaxima: 4.8, sismos2024: 45, riesgoNivel: 'moderado' },
+        'Quintana Roo': { magnitudPromedio: 2.8, sismosTotales: 67, magnitudMaxima: 3.9, sismos2024: 18, riesgoNivel: 'bajo' },
+        'San Luis Potosi': { magnitudPromedio: 3.4, sismosTotales: 223, magnitudMaxima: 5.0, sismos2024: 52, riesgoNivel: 'moderado' },
+        'Sinaloa': { magnitudPromedio: 3.6, sismosTotales: 289, magnitudMaxima: 5.3, sismos2024: 67, riesgoNivel: 'moderado' },
+        'Sonora': { magnitudPromedio: 3.7, sismosTotales: 356, magnitudMaxima: 5.6, sismos2024: 78, riesgoNivel: 'moderado' },
+        'Tabasco': { magnitudPromedio: 2.9, sismosTotales: 98, magnitudMaxima: 4.1, sismos2024: 26, riesgoNivel: 'bajo' },
+        'Tamaulipas': { magnitudPromedio: 3.2, sismosTotales: 167, magnitudMaxima: 4.7, sismos2024: 39, riesgoNivel: 'bajo' },
+        'Tlaxcala': { magnitudPromedio: 3.6, sismosTotales: 234, magnitudMaxima: 5.1, sismos2024: 54, riesgoNivel: 'moderado' },
+        'Veracruz': { magnitudPromedio: 3.8, sismosTotales: 445, magnitudMaxima: 5.8, sismos2024: 98, riesgoNivel: 'moderado' },
+        'Yucatan': { magnitudPromedio: 2.7, sismosTotales: 56, magnitudMaxima: 3.8, sismos2024: 15, riesgoNivel: 'bajo' },
+        'Zacatecas': { magnitudPromedio: 3.3, sismosTotales: 189, magnitudMaxima: 4.9, sismos2024: 43, riesgoNivel: 'moderado' }
+    };
+
+    // Coordenadas de todos los estados mexicanos
+    const coordenadasEstados = {
+        'Aguascalientes': [21.8853, -102.2916],
+        'Baja California': [30.8406, -115.2838],
+        'Baja California Sur': [26.0444, -111.6660],
+        'Campeche': [19.8301, -90.5349],
+        'Coahuila': [25.4232, -101.0053],
+        'Colima': [19.2452, -103.7240],
+        'Chiapas': [16.7569, -93.1292],
+        'Chihuahua': [28.6353, -106.0889],
+        'Ciudad de Mexico': [19.4326, -99.1332],
+        'Durango': [24.0277, -104.6532],
+        'Guanajuato': [21.0190, -101.2574],
+        'Guerrero': [17.4391, -99.5451],
+        'Hidalgo': [20.0911, -98.7624],
+        'Jalisco': [20.6595, -103.3494],
+        'Mexico': [19.3907, -99.5036],
+        'Michoacan': [19.5665, -101.7068],
+        'Morelos': [18.6813, -99.1013],
+        'Nayarit': [21.7514, -104.8455],
+        'Nuevo Leon': [25.5922, -99.9962],
+        'Oaxaca': [17.0732, -96.7266],
+        'Puebla': [19.0414, -98.2063],
+        'Queretaro': [20.5888, -100.3899],
+        'Quintana Roo': [19.1817, -88.4791],
+        'San Luis Potosi': [22.1565, -100.9855],
+        'Sinaloa': [24.8069, -107.4458],
+        'Sonora': [29.2972, -110.3309],
+        'Tabasco': [17.8409, -92.6189],
+        'Tamaulipas': [23.7369, -99.1411],
+        'Tlaxcala': [19.3139, -98.2404],
+        'Veracruz': [19.1738, -96.1342],
+        'Yucatan': [20.7099, -89.0943],
+        'Zacatecas': [22.7709, -102.5832]
+    };
+
+    // Eventos sísmicos significativos de 2024
+    const eventosSismicos = [
+        { fecha: '15 Mar 2024', magnitud: 6.2, ubicacion: 'Oaxaca, México', profundidad: '45 km', intensidad: 'VII (Muy fuerte)', danos: 'Daños menores' },
+        { fecha: '08 Feb 2024', magnitud: 5.8, ubicacion: 'Guerrero, México', profundidad: '25 km', intensidad: 'VI (Fuerte)', danos: 'Sin daños mayores' },
+        { fecha: '22 Jan 2024', magnitud: 5.5, ubicacion: 'Chiapas, México', profundidad: '60 km', intensidad: 'V (Moderado)', danos: 'Sin daños' },
+        { fecha: '05 Jan 2024', magnitud: 5.2, ubicacion: 'Michoacán, México', profundidad: '35 km', intensidad: 'V (Moderado)', danos: 'Sin daños' },
+        { fecha: '18 Dec 2023', magnitud: 5.0, ubicacion: 'Jalisco, México', profundidad: '120 km', intensidad: 'IV (Leve)', danos: 'Sin daños' }
+    ];
+
+    // Variables globales
+    let map;
+    let markersLayer;
+    let estadosFiltrados = Object.keys(datosSismicos);
+    let magnitudChart;
+    let tendenciaChart;
+    let filtros = {
+        magnitud: '',
+        periodo: 'ultimo-ano',
+        profundidad: '',
+        estado: ''
+    };
+
+    // Inicializar el mapa
+    function initMap() {
+        map = L.map('map').setView([23.6345, -102.5528], 5);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(magnitudesMap);
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-        // Datos de sismos con magnitudes
-        const sismosData = [
-            { lat: 17.0732, lng: -96.7266, magnitud: 6.2, fecha: '2024-03-15', lugar: 'Oaxaca' },
-            { lat: 17.4391, lng: -99.5451, magnitud: 5.8, fecha: '2024-02-08', lugar: 'Guerrero' },
-            { lat: 16.7569, lng: -93.1292, magnitud: 5.5, fecha: '2024-01-22', lugar: 'Chiapas' },
-            { lat: 19.5665, lng: -101.7068, magnitud: 5.2, fecha: '2024-01-05', lugar: 'Michoacán' },
-            { lat: 20.6595, lng: -103.3494, magnitud: 5.0, fecha: '2023-12-18', lugar: 'Jalisco' },
-            { lat: 19.4326, lng: -99.1332, magnitud: 4.8, fecha: '2024-02-20', lugar: 'Ciudad de México' },
-            { lat: 18.9265, lng: -98.2063, magnitud: 4.5, fecha: '2024-03-02', lugar: 'Puebla' },
-            { lat: 19.1738, lng: -96.1342, magnitud: 4.2, fecha: '2024-02-15', lugar: 'Veracruz' }
-        ];
+        markersLayer = L.layerGroup().addTo(map);
+    }
 
-        // Función para obtener color según magnitud
-        function getMagnitudeColor(magnitud) {
-            if (magnitud >= 7.0) return '#8b0000';
-            if (magnitud >= 6.0) return '#e74c3c';
-            if (magnitud >= 5.0) return '#e67e22';
-            if (magnitud >= 4.0) return '#f1c40f';
-            if (magnitud >= 3.0) return '#27ae60';
-            return '#2ecc71';
+    // Función para obtener el color según el nivel de riesgo
+    function getColorRiesgo(riesgoNivel) {
+        switch(riesgoNivel) {
+            case 'muy-alto': return '#721c24'; // Rojo oscuro
+            case 'alto': return '#dc3545';     // Rojo
+            case 'moderado': return '#ffc107'; // Amarillo
+            case 'bajo': return '#28a745';     // Verde
+            default: return '#6c757d';         // Gris
         }
+    }
 
-        // Función para obtener tamaño según magnitud
-        function getMagnitudeRadius(magnitud) {
-            return magnitud * 3;
+    // Función para obtener el tamaño del marcador según la magnitud promedio
+    function getSizeMagnitud(magnitudPromedio) {
+        if (magnitudPromedio >= 4.5) return 35;      // Muy alto riesgo
+        if (magnitudPromedio >= 4.0) return 30;      // Alto riesgo
+        if (magnitudPromedio >= 3.5) return 25;      // Riesgo moderado
+        if (magnitudPromedio >= 3.0) return 20;      // Riesgo bajo
+        return 15;                                   // Riesgo muy bajo
+    }
+
+    // Función para obtener descripción de riesgo
+    function getDescripcionRiesgo(riesgoNivel) {
+        const descripciones = {
+            'muy-alto': { nivel: 'MUY ALTO', clase: 'danger', descripcion: 'Zona de actividad sísmica intensa' },
+            'alto': { nivel: 'ALTO', clase: 'warning', descripcion: 'Actividad sísmica frecuente' },
+            'moderado': { nivel: 'MODERADO', clase: 'info', descripcion: 'Actividad sísmica ocasional' },
+            'bajo': { nivel: 'BAJO', clase: 'success', descripcion: 'Actividad sísmica mínima' }
+        };
+        return descripciones[riesgoNivel] || { nivel: 'DESCONOCIDO', clase: 'secondary', descripcion: 'Sin datos' };
+    }
+
+    // Función para obtener badge de magnitud
+    function getMagnitudBadge(magnitud) {
+        if (magnitud >= 7.0) return { clase: 'bg-dark', texto: 'DESTRUCTIVA' };
+        if (magnitud >= 6.0) return { clase: 'bg-danger', texto: 'FUERTE' };
+        if (magnitud >= 5.0) return { clase: 'bg-warning', texto: 'MODERADA' };
+        if (magnitud >= 4.0) return { clase: 'bg-info', texto: 'LIGERA' };
+        return { clase: 'bg-success', texto: 'MENOR' };
+    }
+
+    // Función para cargar y actualizar marcadores
+    function actualizarMarcadores() {
+        console.log('Actualizando marcadores...');
+        console.log('Estados disponibles:', Object.keys(datosSismicos).length);
+        
+        if (!markersLayer) {
+            console.error('markersLayer no está inicializado');
+            return;
         }
+        
+        markersLayer.clearLayers();
 
-        // Agregar sismos al mapa
-        sismosData.forEach(function(sismo) {
-            const radius = getMagnitudeRadius(sismo.magnitud);
-            const color = getMagnitudeColor(sismo.magnitud);
+        // Aplicar filtros
+        const estadosAMostrar = Object.keys(datosSismicos).filter(estado => {
+            const datos = datosSismicos[estado];
             
-            const circle = L.circleMarker([sismo.lat, sismo.lng], {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.8,
-                radius: radius,
-                weight: 2
-            }).addTo(magnitudesMap);
-
-            // Popup con información del sismo
-            circle.bindPopup(`
-                <div class="text-center">
-                    <h6><strong>${sismo.lugar}</strong></h6>
-                    <p class="mb-1"><i class="fas fa-tachometer-alt"></i> Magnitud: ${sismo.magnitud}</p>
-                    <p class="mb-1"><i class="fas fa-calendar"></i> Fecha: ${sismo.fecha}</p>
-                    <span class="badge" style="background-color: ${color};">Magnitud ${sismo.magnitud}</span>
-                </div>
-            `);
+            if (!datos) {
+                console.warn('Datos no encontrados para estado:', estado);
+                return false;
+            }
+            
+            // Filtro por estado específico
+            if (filtros.estado && estado !== filtros.estado) return false;
+            
+            // Filtro por rango de magnitud
+            if (filtros.magnitud) {
+                const [min, max] = filtros.magnitud.includes('+') ? 
+                    [parseFloat(filtros.magnitud), 10] : 
+                    filtros.magnitud.split('-').map(parseFloat);
+                if (datos.magnitudMaxima < min || datos.magnitudMaxima > max) return false;
+            }
+            
+            return true;
         });
 
-        // Leyenda del mapa
-        const magnitudeLegend = L.control({position: 'bottomright'});
-        magnitudeLegend.onAdd = function (map) {
-            const div = L.DomUtil.create('div', 'info legend');
-            div.style.backgroundColor = 'white';
-            div.style.padding = '10px';
-            div.style.borderRadius = '5px';
-            div.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-            
-            div.innerHTML = `
-                <h6><strong>Escala de Magnitudes</strong></h6>
-                <i style="background: #8b0000; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> 7.0+ (Mayor)<br>
-                <i style="background: #e74c3c; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> 6.0-6.9 (Fuerte)<br>
-                <i style="background: #e67e22; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> 5.0-5.9 (Moderado)<br>
-                <i style="background: #f1c40f; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> 4.0-4.9 (Leve)<br>
-                <i style="background: #27ae60; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> 3.0-3.9 (Menor)<br>
-                <i style="background: #2ecc71; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> 2.0-2.9 (Micro)<br>
-                <small>El tamaño indica la magnitud</small>
-            `;
-            return div;
-        };
-        magnitudeLegend.addTo(magnitudesMap);
+        console.log('Estados a mostrar:', estadosAMostrar.length);
+        estadosFiltrados = estadosAMostrar;
 
+        // Añadir marcadores al mapa
+        let marcadoresCreados = 0;
+        estadosAMostrar.forEach(estado => {
+            const datos = datosSismicos[estado];
+            const coordenadas = coordenadasEstados[estado];
+            
+            if (!coordenadas) {
+                console.warn('Coordenadas no encontradas para:', estado);
+                return;
+            }
+            
+            if (coordenadas) {
+                const riesgo = getDescripcionRiesgo(datos.riesgoNivel);
+                const magnitudBadge = getMagnitudBadge(datos.magnitudMaxima);
+                
+                const circle = L.circleMarker(coordenadas, {
+                    radius: getSizeMagnitud(datos.magnitudPromedio),
+                    fillColor: getColorRiesgo(datos.riesgoNivel),
+                    color: '#000',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+
+                const popupContent = `
+                    <div class="text-center">
+                        <h6><strong>${estado}</strong></h6>
+                        <div class="mb-2">
+                            <span class="badge bg-${riesgo.clase} fs-6">RIESGO ${riesgo.nivel}</span>
+                        </div>
+                        <div class="text-start">
+                            <p class="mb-1">
+                                <i class="fas fa-chart-line text-warning"></i> 
+                                <strong>Magnitud Promedio:</strong> ${datos.magnitudPromedio}
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-exclamation-triangle text-danger"></i> 
+                                <strong>Magnitud Máxima:</strong> ${datos.magnitudMaxima}
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-wave-square text-info"></i> 
+                                <strong>Sismos Totales:</strong> ${datos.sismosTotales.toLocaleString()}
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-calendar text-primary"></i> 
+                                <strong>Sismos 2024:</strong> ${datos.sismos2024}
+                            </p>
+                            <p class="mb-0">
+                                <i class="fas fa-shield-alt text-${riesgo.clase}"></i> 
+                                <strong>Nivel de Riesgo:</strong> ${riesgo.nivel}
+                            </p>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="centrarEnEstado('${estado}')">
+                                <i class="fas fa-crosshairs"></i> Centrar
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="filtrarPorEstado('${estado}')">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                circle.bindPopup(popupContent, { maxWidth: 350 });
+                markersLayer.addLayer(circle);
+                marcadoresCreados++;
+                
+                // Tooltip al hacer hover
+                circle.on('mouseover', function() {
+                    this.bindTooltip(`${estado}: Mag. ${datos.magnitudPromedio} promedio`, {
+                        permanent: false,
+                        direction: 'top'
+                    }).openTooltip();
+                });
+            }
+        });
+        
+        console.log('Marcadores creados:', marcadoresCreados);
+
+        // Actualizar estadísticas y listas
+        generarListaEstados();
+        mostrarFiltroActivo();
+        actualizarTablaEventos();
+        
+        // Mostrar mensaje si no hay estados
+        if (marcadoresCreados === 0) {
+            mostrarError('No se encontraron estados para mostrar con los filtros aplicados');
+        } else {
+            console.log('Actualización completada exitosamente');
+        }
+    }
+
+    // Función para poblar el select de estados
+    function poblarSelectEstados() {
+        const estadoSelect = document.getElementById('estadoSelect');
+        const estados = Object.keys(datosSismicos).sort();
+        
+        estadoSelect.innerHTML = '<option value="">Todos los estados</option>';
+        
+        estados.forEach(estado => {
+            const option = document.createElement('option');
+            option.value = estado;
+            option.textContent = estado;
+            estadoSelect.appendChild(option);
+        });
+    }
+
+    // Función para generar lista de estados
+    function generarListaEstados() {
+        console.log('Generando lista de estados...');
+        const listaContainer = document.getElementById('estadosLista');
+        
+        if (!listaContainer) {
+            console.error('Container de lista no encontrado');
+            return;
+        }
+        
+        listaContainer.innerHTML = '';
+
+        // Verificar que hay estados filtrados
+        if (!estadosFiltrados || estadosFiltrados.length === 0) {
+            console.warn('No hay estados filtrados');
+            listaContainer.innerHTML = '<p class="text-muted text-center">No hay estados que mostrar</p>';
+            return;
+        }
+
+        // Ordenar estados por actividad sísmica (sismos totales)
+        const estadosOrdenados = estadosFiltrados
+            .filter(estado => datosSismicos[estado]) // Verificar que existan los datos
+            .sort((a, b) => datosSismicos[b].sismosTotales - datosSismicos[a].sismosTotales);
+
+        console.log('Estados ordenados:', estadosOrdenados.length);
+
+        if (estadosOrdenados.length === 0) {
+            listaContainer.innerHTML = '<p class="text-muted text-center">No hay estados que mostrar</p>';
+            return;
+        }
+
+        estadosOrdenados.forEach((estado, index) => {
+            const datos = datosSismicos[estado];
+            
+            if (!datos) {
+                console.warn('Datos no encontrados para estado en lista:', estado);
+                return;
+            }
+            
+            const riesgo = getDescripcionRiesgo(datos.riesgoNivel);
+            const isSelected = filtros.estado === estado;
+            
+            const estadoCard = document.createElement('div');
+            estadoCard.className = `estado-item magnitud-${datos.riesgoNivel} ${isSelected ? 'selected' : ''}`;
+            estadoCard.onclick = () => filtrarPorEstado(estado);
+            
+            estadoCard.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${estado}</strong>
+                        <br>
+                        <small class="text-${riesgo.clase}">
+                            <i class="fas fa-circle me-1"></i>RIESGO ${riesgo.nivel}
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-warning text-dark">${datos.magnitudPromedio}</span>
+                        <br>
+                        <small class="text-muted">Mag. promedio</small>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">Máxima</small>
+                            <br>
+                            <strong>${datos.magnitudMaxima}</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Sismos</small>
+                            <br>
+                            <strong>${datos.sismosTotales.toLocaleString()}</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">2024</small>
+                            <br>
+                            <strong>${datos.sismos2024}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            listaContainer.appendChild(estadoCard);
+        });
+        
+        console.log('Lista de estados generada con', estadosOrdenados.length, 'elementos');
+    }
+
+    // Función para actualizar tabla de eventos
+    function actualizarTablaEventos() {
+        const tablaContainer = document.getElementById('eventosTabla');
+        tablaContainer.innerHTML = '';
+
+        eventosSismicos.forEach(evento => {
+            const magnitudBadge = getMagnitudBadge(evento.magnitud);
+            
+            const row = document.createElement('tr');
+            row.className = 'evento-row';
+            row.innerHTML = `
+                <td>${evento.fecha}</td>
+                <td>
+                    <span class="magnitud-badge ${magnitudBadge.clase}">${evento.magnitud}</span>
+                </td>
+                <td>${evento.ubicacion}</td>
+                <td>${evento.profundidad}</td>
+                <td>
+                    <span class="badge intensidad-badge bg-secondary">${evento.intensidad}</span>
+                </td>
+                <td>${evento.danos}</td>
+            `;
+            
+            tablaContainer.appendChild(row);
+        });
+    }
+
+    // Función para inicializar gráficos
+    function initCharts() {
         // Gráfico de distribución por magnitud
-        const ctx1 = document.getElementById('magnitudeDistributionChart').getContext('2d');
-        new Chart(ctx1, {
+        const ctx1 = document.getElementById('magnitudChart').getContext('2d');
+        magnitudChart = new Chart(ctx1, {
             type: 'doughnut',
             data: {
                 labels: ['2.0-3.9', '4.0-4.9', '5.0-5.9', '6.0+'],
                 datasets: [{
-                    data: [78, 18, 3.5, 0.5],
-                    backgroundColor: ['#2ecc71', '#f1c40f', '#e67e22', '#e74c3c'],
-                    borderWidth: 2
+                    data: [12450, 2880, 560, 80],
+                    backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545'],
+                    borderWidth: 0
                 }]
             },
             options: {
@@ -459,16 +983,16 @@
         });
 
         // Gráfico de tendencia temporal
-        const ctx2 = document.getElementById('magnitudeTrendChart').getContext('2d');
-        new Chart(ctx2, {
+        const ctx2 = document.getElementById('tendenciaChart').getContext('2d');
+        tendenciaChart = new Chart(ctx2, {
             type: 'line',
             data: {
                 labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
                 datasets: [{
                     label: 'Magnitud Promedio',
-                    data: [4.1, 4.3, 4.5, 4.2, 4.0, 4.2],
-                    borderColor: '#e67e22',
-                    backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                    data: [4.0, 4.3, 4.5, 4.2, 4.0, 4.2],
+                    borderColor: '#ff9500',
+                    backgroundColor: 'rgba(255, 149, 0, 0.1)',
                     tension: 0.4,
                     fill: true
                 }]
@@ -480,20 +1004,252 @@
                     y: {
                         beginAtZero: false,
                         min: 3.5,
-                        max: 5.0,
-                        title: {
-                            display: true,
-                            text: 'Magnitud'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
+                        max: 5.0
                     }
                 }
             }
         });
-    </script>
+    }
+
+    // Función para filtrar por estado
+    function filtrarPorEstado(estado) {
+        if (filtros.estado === estado) {
+            filtros.estado = '';
+        } else {
+            filtros.estado = estado;
+        }
+        
+        document.getElementById('estadoSelect').value = filtros.estado;
+        actualizarMarcadores();
+        mostrarExito(filtros.estado ? `Filtrado por: ${estado}` : `Filtro removido: ${estado}`);
+    }
+
+    // Función para centrar en estado
+    function centrarEnEstado(estado) {
+        const coordenadas = coordenadasEstados[estado];
+        if (coordenadas) {
+            map.setView(coordenadas, 8);
+            mostrarExito(`Centrado en ${estado}`);
+        }
+    }
+
+    // Función para mostrar filtro activo
+    function mostrarFiltroActivo() {
+        const filtroActivo = document.getElementById('filtroActivo');
+        const filtroTexto = document.getElementById('filtroTexto');
+        
+        const filtrosTexto = [];
+        if (filtros.estado) filtrosTexto.push(`Estado: ${filtros.estado}`);
+        if (filtros.magnitud) filtrosTexto.push(`Magnitud: ${filtros.magnitud}`);
+        if (filtros.profundidad) filtrosTexto.push(`Profundidad: ${filtros.profundidad}`);
+        if (filtros.periodo !== 'ultimo-ano') filtrosTexto.push(`Período: ${filtros.periodo}`);
+        
+        if (filtrosTexto.length > 0) {
+            filtroTexto.textContent = filtrosTexto.join(', ');
+            filtroActivo.style.display = 'block';
+        } else {
+            filtroActivo.style.display = 'none';
+        }
+    }
+
+    // Función para limpiar filtros
+    function limpiarFiltros() {
+        filtros = {
+            magnitud: '',
+            periodo: 'ultimo-ano',
+            profundidad: '',
+            estado: ''
+        };
+        
+        // Reiniciar controles
+        document.getElementById('magnitudSelect').value = '';
+        document.getElementById('periodoSelect').value = 'ultimo-ano';
+        document.getElementById('profundidadSelect').value = '';
+        document.getElementById('estadoSelect').value = '';
+        
+        actualizarMarcadores();
+        mostrarExito('Todos los filtros han sido reiniciados');
+    }
+
+    // Función para exportar datos
+    function exportarDatos() {
+        mostrarSpinner(true);
+        
+        try {
+            let csvContent = "Estado,Magnitud Promedio,Magnitud Maxima,Sismos Totales,Sismos 2024,Nivel de Riesgo\n";
+            
+            estadosFiltrados.forEach(estado => {
+                const datos = datosSismicos[estado];
+                csvContent += `"${estado}","${datos.magnitudPromedio}","${datos.magnitudMaxima}","${datos.sismosTotales}","${datos.sismos2024}","${datos.riesgoNivel}"\n`;
+            });
+
+            // Crear y descargar archivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `magnitudes_sismicas_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            mostrarExito(`Datos exportados: ${estadosFiltrados.length} estados`);
+        } catch (error) {
+            mostrarError('Error al exportar datos: ' + error.message);
+        } finally {
+            mostrarSpinner(false);
+        }
+    }
+
+    // Función para ver tendencias
+    function verTendencias() {
+        mostrarExito('Mostrando análisis de tendencias temporales');
+        // Aquí se podría abrir un modal o navegar a una vista detallada
+    }
+
+    // Funciones auxiliares
+    function mostrarSpinner(mostrar) {
+        const spinner = document.getElementById('loadingSpinner');
+        spinner.style.display = mostrar ? 'block' : 'none';
+    }
+
+    function mostrarError(mensaje) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+        errorDiv.style.zIndex = '9999';
+        errorDiv.style.marginTop = '20px';
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    }
+
+    function mostrarExito(mensaje) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+        successDiv.style.zIndex = '9999';
+        successDiv.style.marginTop = '20px';
+        successDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.parentNode.removeChild(successDiv);
+            }
+        }, 3000);
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, inicializando...');
+        
+        // Verificar que los elementos existen
+        const mapElement = document.getElementById('map');
+        const estadosListaElement = document.getElementById('estadosLista');
+        
+        if (!mapElement) {
+            console.error('Elemento mapa no encontrado');
+            return;
+        }
+        
+        if (!estadosListaElement) {
+            console.error('Elemento lista de estados no encontrado');
+            return;
+        }
+        
+        // Inicializar mapa y gráficos
+        try {
+            // Verificar datos antes de inicializar
+            console.log('Verificando datos sísmicos...');
+            console.log('Estados en datosSismicos:', Object.keys(datosSismicos).length);
+            console.log('Estados en coordenadas:', Object.keys(coordenadasEstados).length);
+            
+            // Mostrar algunos datos de ejemplo
+            const primerosEstados = Object.keys(datosSismicos).slice(0, 3);
+            primerosEstados.forEach(estado => {
+                console.log(`${estado}:`, datosSismicos[estado]);
+                console.log(`${estado} coordenadas:`, coordenadasEstados[estado]);
+            });
+            
+            initMap();
+            console.log('Mapa inicializado');
+            
+            initCharts();
+            console.log('Gráficos inicializados');
+            
+            // Poblar controles
+            poblarSelectEstados();
+            console.log('Select de estados poblado');
+            
+            // Cargar datos iniciales
+            actualizarMarcadores();
+            console.log('Marcadores actualizados');
+            
+            // Actualizar magnitud máxima en el panel
+            const magnitudMaxima = Math.max(...Object.values(datosSismicos).map(d => d.magnitudMaxima));
+            const magnitudMaximaElement = document.getElementById('magnitudMaxima');
+            if (magnitudMaximaElement) {
+                magnitudMaximaElement.textContent = magnitudMaxima.toFixed(1);
+                console.log('Magnitud máxima actualizada:', magnitudMaxima);
+            } else {
+                console.warn('Elemento magnitudMaxima no encontrado');
+            }
+            
+            // Forzar una actualización de la lista si no se muestra
+            setTimeout(() => {
+                const listaContainer = document.getElementById('estadosLista');
+                if (listaContainer && listaContainer.innerHTML.includes('Cargando')) {
+                    console.log('Forzando actualización de lista...');
+                    generarListaEstados();
+                }
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error en inicialización:', error);
+            mostrarError('Error al cargar el sistema: ' + error.message);
+        }
+
+        // Botón aplicar filtros
+        document.getElementById('aplicarFiltros').addEventListener('click', function() {
+            filtros.magnitud = document.getElementById('magnitudSelect').value;
+            filtros.periodo = document.getElementById('periodoSelect').value;
+            filtros.profundidad = document.getElementById('profundidadSelect').value;
+            filtros.estado = document.getElementById('estadoSelect').value;
+            
+            actualizarMarcadores();
+            mostrarExito('Filtros aplicados correctamente');
+        });
+
+        // Select de estados
+        document.getElementById('estadoSelect').addEventListener('change', function() {
+            filtros.estado = this.value;
+            actualizarMarcadores();
+            if (this.value) {
+                mostrarExito(`Filtrado por estado: ${this.value}`);
+            } else {
+                mostrarExito('Mostrando todos los estados');
+            }
+        });
+
+        // Botones de acción
+        document.getElementById('btnExportarDatos').addEventListener('click', exportarDatos);
+        document.getElementById('btnVerTendencias').addEventListener('click', verTendencias);
+        document.getElementById('btnVolver').addEventListener('click', function() {
+            window.history.back();
+        });
+    });
+</script>
+
 </body>
 </html>

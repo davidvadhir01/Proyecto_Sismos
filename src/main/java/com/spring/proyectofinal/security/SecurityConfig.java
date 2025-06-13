@@ -19,11 +19,17 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/statistics", "/map", "/alerts", "/reports", "/about").permitAll()
-                .requestMatchers("/auth/**").permitAll()
+                // Permitir acceso público a todas las páginas principales
+                .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/static/**").permitAll()
+                .requestMatchers("/mapa", "/mapas/**", "/api/**").permitAll()
+                .requestMatchers("/alerts", "/statistics", "/reports", "/about").permitAll()
+                
+                // Solo restringir el área de administración
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/perfil/**").authenticated()
-                .anyRequest().authenticated()
+                .requestMatchers("/auth/login", "/auth/registro").permitAll()
+                
+                // Todo lo demás es público
+                .anyRequest().permitAll()
             )
             .formLogin(form -> form
                 .loginPage("/auth/login")
@@ -32,7 +38,7 @@ public class SecurityConfig {
                             .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
                         response.sendRedirect("/admin/perfil");
                     } else {
-                        response.sendRedirect("/perfil");
+                        response.sendRedirect("/");
                     }
                 })
                 .permitAll()
@@ -40,7 +46,7 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/auth/logout")
                 .logoutSuccessUrl("/")
-                .logoutSuccessUrl("/auth/login")
+                .permitAll()
             );
 
         return http.build();

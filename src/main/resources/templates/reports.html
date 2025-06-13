@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Sismos - SismoMex</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .report-card {
+            transition: transform 0.3s;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        .magnitude-badge {
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            min-width: 60px;
+            text-align: center;
+        }
+        .magnitude-high { background-color: #dc3545; color: white; }
+        .magnitude-medium { background-color: #fd7e14; color: white; }
+        .magnitude-low { background-color: #ffc107; color: black; }
+        .magnitude-minimal { background-color: #28a745; color: white; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-globe-americas me-2"></i>SismoMex
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Inicio</a>
+                <a class="nav-link" href="/mapa">Mapa</a>
+                <a class="nav-link" href="/mapas">Análisis</a>
+                <a class="nav-link active" href="/reports">Reportes</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-file-alt text-primary me-3"></i>
+                    Reportes de Actividad Sísmica
+                </h1>
+                <p class="lead text-muted mb-5">
+                    Consulta el historial completo de sismos registrados en México
+                </p>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Filtrar por Año</label>
+                <select class="form-select" id="yearFilter">
+                    <option value="">Todos los años</option>
+                    <option th:each="year : ${años}" th:value="${year}" th:text="${year}"></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Magnitud Mínima</label>
+                <select class="form-select" id="magnitudeFilter">
+                    <option value="0">Todas las magnitudes</option>
+                    <option value="3.0">3.0+</option>
+                    <option value="4.0">4.0+</option>
+                    <option value="5.0">5.0+</option>
+                    <option value="6.0">6.0+</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select class="form-select" id="stateFilter">
+                    <option value="">Todos los estados</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary w-100" onclick="aplicarFiltros()">
+                    <i class="fas fa-search me-2"></i>Filtrar
+                </button>
+            </div>
+        </div>
+
+        <!-- Estadísticas resumidas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card report-card text-center">
+                    <div class="card-body">
+                        <h3 class="text-primary" id="totalSismos" th:text="${totalSismos ?: 0}">0</h3>
+                        <p class="mb-0">Total de Sismos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card report-card text-center">
+                    <div class="card-body">
+                        <h3 class="text-warning" id="sismosFuertes">0</h3>
+                        <p class="mb-0">Sismos > 5.0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card report-card text-center">
+                    <div class="card-body">
+                        <h3 class="text-danger" id="sismosAltos">0</h3>
+                        <p class="mb-0">Sismos > 6.0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card report-card text-center">
+                    <div class="card-body">
+                        <h3 class="text-success" id="estadosAfectados">0</h3>
+                        <p class="mb-0">Estados con Actividad</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de sismos -->
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>Registro de Sismos
+                    </h5>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm me-2" onclick="exportarCSV()">
+                            <i class="fas fa-download me-1"></i>Exportar CSV
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="verEnMapa()">
+                            <i class="fas fa-map me-1"></i>Ver en Mapa
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="sismosTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha y Hora</th>
+                                <th>Magnitud</th>
+                                <th>Estado</th>
+                                <th>Coordenadas</th>
+                                <th>Profundidad</th>
+                                <th>Referencia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sismosTableBody">
+                            <!-- Los sismos se cargan dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginación -->
+                <nav>
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- La paginación se genera dinámicamente -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let todosLosSismos = [];
+        let sismosFiltrados = [];
+        let paginaActual = 1;
+        const sismosPorPagina = 20;
+
+        // Cargar datos al inicio
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarSismos();
+        });
+
+        function cargarSismos() {
+            fetch('/api/sismos')
+                .then(response => response.json())
+                .then(data => {
+                    todosLosSismos = data;
+                    sismosFiltrados = [...data];
+                    
+                    poblarFiltros();
+                    actualizarEstadisticas();
+                    mostrarSismos();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarError('Error al cargar los datos de sismos');
+                });
+        }
+
+        function poblarFiltros() {
+            // Poblar filtro de estados
+            const estados = [...new Set(todosLosSismos
+                .map(s => s.estado)
+                .filter(e => e && e.trim() !== '')
+            )].sort();
+            
+            const stateFilter = document.getElementById('stateFilter');
+            stateFilter.innerHTML = '<option value="">Todos los estados</option>';
+            estados.forEach(estado => {
+                stateFilter.innerHTML += `<option value="${estado}">${estado}</option>`;
+            });
+        }
+
+        function aplicarFiltros() {
+            const yearFilter = document.getElementById('yearFilter').value;
+            const magnitudeFilter = parseFloat(document.getElementById('magnitudeFilter').value) || 0;
+            const stateFilter = document.getElementById('stateFilter').value;
+
+            sismosFiltrados = todosLosSismos.filter(sismo => {
+                const fechaSismo = new Date(sismo.fecha);
+                const yearSismo = fechaSismo.getFullYear();
+                
+                return (!yearFilter || yearSismo.toString() === yearFilter) &&
+                       (sismo.magnitud >= magnitudeFilter) &&
+                       (!stateFilter || sismo.estado === stateFilter);
+            });
+
+            paginaActual = 1;
+            actualizarEstadisticas();
+            mostrarSismos();
+        }
+
+        function actualizarEstadisticas() {
+            document.getElementById('totalSismos').textContent = sismosFiltrados.length;
+            
+            const sismosFuertes = sismosFiltrados.filter(s => s.magnitud >= 5.0).length;
+            document.getElementById('sismosFuertes').textContent = sismosFuertes;
+            
+            const sismosAltos = sismosFiltrados.filter(s => s.magnitud >= 6.0).length;
+            document.getElementById('sismosAltos').textContent = sismosAltos;
+            
+            const estadosUnicos = new Set(sismosFiltrados.map(s => s.estado).filter(e => e));
+            document.getElementById('estadosAfectados').textContent = estadosUnicos.size;
+        }
+
+        function mostrarSismos() {
+            const tbody = document.getElementById('sismosTableBody');
+            const inicio = (paginaActual - 1) * sismosPorPagina;
+            const fin = inicio + sismosPorPagina;
+            const sismosEnPagina = sismosFiltrados.slice(inicio, fin);
+
+            tbody.innerHTML = '';
+            
+            sismosEnPagina.forEach(sismo => {
+                const fecha = new Date(sismo.fecha);
+                const magnitudClass = getMagnitudeClass(sismo.magnitud);
+                
+                const row = `
+                    <tr>
+                        <td>${fecha.toLocaleDateString('es-MX')} ${fecha.toLocaleTimeString('es-MX')}</td>
+                        <td><span class="magnitude-badge ${magnitudClass}">${sismo.magnitud}</span></td>
+                        <td>${sismo.estado || 'N/A'}</td>
+                        <td>${sismo.latitud.toFixed(3)}, ${sismo.longitud.toFixed(3)}</td>
+                        <td>${sismo.profundidad || 'N/A'} km</td>
+                        <td><small>${sismo.referencia || 'N/A'}</small></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            generarPaginacion();
+        }
+
+        function getMagnitudeClass(magnitud) {
+            if (magnitud >= 6.0) return 'magnitude-high';
+            if (magnitud >= 5.0) return 'magnitude-medium';
+            if (magnitud >= 4.0) return 'magnitude-low';
+            return 'magnitude-minimal';
+        }
+
+        function generarPaginacion() {
+            const totalPaginas = Math.ceil(sismosFiltrados.length / sismosPorPagina);
+            const pagination = document.getElementById('pagination');
+            
+            pagination.innerHTML = '';
+            
+            // Botón anterior
+            if (paginaActual > 1) {
+                pagination.innerHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="cambiarPagina(${paginaActual - 1})">Anterior</a>
+                    </li>
+                `;
+            }
+            
+            // Páginas
+            const inicio = Math.max(1, paginaActual - 2);
+            const fin = Math.min(totalPaginas, paginaActual + 2);
+            
+            for (let i = inicio; i <= fin; i++) {
+                const active = i === paginaActual ? 'active' : '';
+                pagination.innerHTML += `
+                    <li class="page-item ${active}">
+                        <a class="page-link" href="#" onclick="cambiarPagina(${i})">${i}</a>
+                    </li>
+                `;
+            }
+            
+            // Botón siguiente
+            if (paginaActual < totalPaginas) {
+                pagination.innerHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="cambiarPagina(${paginaActual + 1})">Siguiente</a>
+                    </li>
+                `;
+            }
+        }
+
+        function cambiarPagina(pagina) {
+            paginaActual = pagina;
+            mostrarSismos();
+        }
+
+        function exportarCSV() {
+            const csv = convertirACSV(sismosFiltrados);
+            descargarCSV(csv, 'sismos_reporte.csv');
+        }
+
+        function convertirACSV(datos) {
+            const headers = ['Fecha', 'Hora', 'Magnitud', 'Estado', 'Latitud', 'Longitud', 'Profundidad', 'Referencia'];
+            const rows = datos.map(sismo => {
+                const fecha = new Date(sismo.fecha);
+                return [
+                    fecha.toLocaleDateString('es-MX'),
+                    fecha.toLocaleTimeString('es-MX'),
+                    sismo.magnitud,
+                    sismo.estado || '',
+                    sismo.latitud,
+                    sismo.longitud,
+                    sismo.profundidad || '',
+                    sismo.referencia || ''
+                ].map(value => `"${value}"`).join(',');
+            });
+            
+            return [headers.join(','), ...rows].join('\n');
+        }
+
+        function descargarCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function verEnMapa() {
+            window.location.href = '/mapa';
+        }
+
+        function mostrarError(mensaje) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger alert-dismissible fade show';
+            alert.innerHTML = `
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').insertBefore(alert, document.querySelector('.row'));
+        }
+    </script>
+</body>
+</html>

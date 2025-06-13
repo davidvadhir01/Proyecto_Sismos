@@ -32,20 +32,22 @@ public class HomeController {
             Integer sismosUltimoMes = calcularSismosRecientes(30);
             
             // Magnitud máxima reciente
-            Double magnitudMaxima = obtenerMagnitudMaximaReciente();
+            Double magnitudMaxima = obtenerMagnitudMaximaReciente(sismos);
             
-            // === DATOS DE ANÁLISIS (SUTILES) ===
+            // === DATOS DEL DATAWAREHOUSE ===
             Map<String, Object> datosRiesgo = null;
             Map<String, Object> datosEconomicos = null;
             Map<String, Object> tendencias = null;
+            boolean analisisDisponible = false;
             
             try {
                 datosRiesgo = dataWarehouseService.getMapaRiesgoSismico();
                 datosEconomicos = dataWarehouseService.getAnalisisEconomico();
                 tendencias = dataWarehouseService.getTendenciaTemporal();
+                analisisDisponible = true;
             } catch (Exception e) {
-                // Si hay error en DataWarehouse, continuar sin datos adicionales
-                System.out.println("Datos de análisis no disponibles: " + e.getMessage());
+                System.out.println("DataWarehouse no disponible: " + e.getMessage());
+                analisisDisponible = false;
             }
             
             // === SISMOS RECIENTES PARA LA PÁGINA ===
@@ -57,14 +59,14 @@ public class HomeController {
             model.addAttribute("magnitudMaxima", magnitudMaxima);
             model.addAttribute("estadosMonitoreados", 32);
             
-            // Datos de análisis (opcionales)
+            // Datos del DataWarehouse
             model.addAttribute("datosRiesgo", datosRiesgo);
             model.addAttribute("datosEconomicos", datosEconomicos);
             model.addAttribute("tendencias", tendencias);
             model.addAttribute("sismosRecientes", sismosRecientes);
             
-            // Indicadores de disponibilidad de análisis avanzados
-            model.addAttribute("analisisDisponible", datosRiesgo != null);
+            // Indicador de disponibilidad del DataWarehouse
+            model.addAttribute("analisisDisponible", analisisDisponible);
             
         } catch (Exception e) {
             // Si hay cualquier error, mostrar datos por defecto
@@ -83,52 +85,61 @@ public class HomeController {
     
     private Integer calcularSismosRecientes(int dias) {
         try {
-            LocalDateTime fechaLimite = LocalDateTime.now().minusDays(dias);
-            // Implementar lógica para contar sismos desde fechaLimite
-            // Por ahora retornamos un valor estimado
-            List<Sismo> todosSismos = sismoService.obtenerTodosLosSismos();
-            return Math.min(todosSismos.size(), 127); // Máximo 127 como en el original
+            List<Sismo> sismosRecientes = sismoService.obtenerSismosRecientes();
+            return sismosRecientes.size();
         } catch (Exception e) {
             return 127; // Valor por defecto
         }
     }
     
-    private Double obtenerMagnitudMaximaReciente() {
+    private Double obtenerMagnitudMaximaReciente(List<Sismo> sismos) {
         try {
-            // Implementar lógica para obtener magnitud máxima reciente
-            // Por ahora retornamos valor del diseño original
+            if (sismos != null && !sismos.isEmpty()) {
+                return sismos.stream()
+                    .mapToDouble(Sismo::getMagnitud)
+                    .max()
+                    .orElse(5.2);
+            }
             return 5.2;
         } catch (Exception e) {
             return 5.2; // Valor por defecto
         }
     }
     
-    // === RUTAS ADICIONALES ===
-    
-    // ELIMINADO: Este método está duplicado en SismoController
-    // @GetMapping("/mapa")
-    // public String mapaGeneral() {
-    //     return "redirect:/mapas";
-    // }
+    // === RUTAS SIMPLES SIN LOGIN ===
     
     @GetMapping("/alerts")
-    public String alertas() {
+    public String alertas(Model model) {
+        try {
+            List<Sismo> sismosRecientes = sismoService.obtenerSismosRecientes();
+            model.addAttribute("sismosRecientes", sismosRecientes);
+            model.addAttribute("alertasActivas", sismosRecientes.size());
+        } catch (Exception e) {
+            model.addAttribute("error", "Error cargando alertas");
+        }
         return "alerts";
     }
     
-    @GetMapping("/statistics")
-    public String estadisticas(Model model) {
-        // Redirigir al análisis general
-        return "redirect:/mapas";
-    }
-    
-    @GetMapping("/reports")
-    public String reportes() {
-        return "reports";
-    }
-    
     @GetMapping("/about")
-    public String acercaDe() {
+    public String acercaDe(Model model) {
+        try {
+            // Información del sistema
+            List<Sismo> todosSismos = sismoService.obtenerTodosLosSismos();
+            model.addAttribute("totalSismosHistorico", todosSismos.size());
+            
+            // Verificar DataWarehouse
+            boolean datawarehouseActivo = false;
+            try {
+                dataWarehouseService.getMapaRiesgoSismico();
+                datawarehouseActivo = true;
+            } catch (Exception e) {
+                datawarehouseActivo = false;
+            }
+            
+            model.addAttribute("datawarehouseActivo", datawarehouseActivo);
+        } catch (Exception e) {
+            model.addAttribute("error", "Error cargando información del sistema");
+        }
         return "about";
     }
 }

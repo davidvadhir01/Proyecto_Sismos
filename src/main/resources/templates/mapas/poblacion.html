@@ -1,275 +1,1038 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análisis de Impacto Poblacional - SismoMex</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .map-container {
+        #map {
             height: 600px;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 10px;
+        }
+        
         .stats-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-radius: 15px;
+            border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
         }
-        .population-indicator {
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
+        
+        .risk-card {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
             color: white;
-            padding: 15px;
             border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-card {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .protected-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .moderate-card {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .riesgo-bar {
+            height: 25px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .estado-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .estado-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+            border-left-color: #007bff;
+        }
+        
+        .estado-item.selected {
+            background-color: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        
+        .riesgo-alto { border-left-color: #dc3545 !important; }
+        .riesgo-moderado { border-left-color: #ffc107 !important; }
+        .riesgo-bajo { border-left-color: #28a745 !important; }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #333;
+        }
+        
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+        
+        .filtro-activo {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
+            color: white;
+        }
+        
+        .progress-custom {
+            height: 25px;
+            border-radius: 12px;
+            background-color: rgba(255,255,255,0.2);
+        }
+        
+        .progress-bar-custom {
+            border-radius: 12px;
+        }
+        
+        .big-number {
+            font-size: 3.5rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+        
+        .metric-card {
             text-align: center;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .danger-zone {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            color: white;
+        }
+        
+        .safe-zone {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+            color: white;
+        }
+        
+        .moderate-zone {
+            background: linear-gradient(135deg, #ffd43b 0%, #fab005 100%);
+            color: white;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-globe-americas me-2"></i>SismoMex
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/">Inicio</a>
-                <a class="nav-link" href="/mapas">Análisis</a>
-                <a class="nav-link active" href="/mapas/poblacion">Población</a>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-users me-2"></i>SismoMex
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/mapa">Análisis</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/mapas/poblacion">Población</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Spinner de carga -->
+<div class="loading-spinner" id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-3">
+                <i class="fas fa-users text-primary me-2"></i>
+                Análisis de Impacto Poblacional
+            </h1>
+            
+            <!-- Filtro activo -->
+            <div id="filtroActivo" class="filtro-activo" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Filtros aplicados:</strong> <span id="filtroTexto"></span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="limpiarFiltros()">
+                        <i class="fas fa-times"></i> Quitar filtros
+                    </button>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center">
+                <button id="btnVolver" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left me-1"></i> Volver a Análisis
+                </button>
             </div>
         </div>
-    </nav>
-
-    <div class="container-fluid py-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1><i class="fas fa-users text-primary me-3"></i>Análisis de Impacto Poblacional</h1>
-                    <a href="/mapas" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Volver a Análisis
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <!-- Panel de Estadísticas -->
-            <div class="col-lg-3">
-                <div class="stats-card">
-                    <h5><i class="fas fa-chart-bar me-2"></i>Estadísticas Poblacionales</h5>
-                    <div class="population-indicator mt-3">
-                        <h3>127M</h3>
-                        <p class="mb-0">Población Total Analizada</p>
-                    </div>
-                    <div class="mt-3">
-                        <p><strong>Estados de Alto Riesgo:</strong></p>
-                        <ul class="list-unstyled">
-                            <li><i class="fas fa-circle text-danger me-2"></i>Oaxaca: 4.1M habitantes</li>
-                            <li><i class="fas fa-circle text-warning me-2"></i>Guerrero: 3.5M habitantes</li>
-                            <li><i class="fas fa-circle text-warning me-2"></i>Chiapas: 5.5M habitantes</li>
-                            <li><i class="fas fa-circle text-info me-2"></i>Michoacán: 4.7M habitantes</li>
-                        </ul>
-                    </div>
-                    <div class="mt-4">
-                        <h6>Población en Zonas Sísmicas:</h6>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-danger" style="width: 35%">Alto Riesgo: 35%</div>
-                        </div>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-warning" style="width: 28%">Riesgo Moderado: 28%</div>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar bg-success" style="width: 37%">Bajo Riesgo: 37%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h6><i class="fas fa-filter me-2"></i>Filtros de Análisis</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Densidad Poblacional</label>
-                            <select class="form-select">
-                                <option>Todas las densidades</option>
-                                <option>Alta densidad (>1000 hab/km²)</option>
-                                <option>Media densidad (100-1000 hab/km²)</option>
-                                <option>Baja densidad (<100 hab/km²)</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nivel de Riesgo Sísmico</label>
-                            <select class="form-select">
-                                <option>Todos los niveles</option>
-                                <option>Alto riesgo</option>
-                                <option>Riesgo moderado</option>
-                                <option>Bajo riesgo</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Grupo Poblacional</label>
-                            <select class="form-select">
-                                <option>Población total</option>
-                                <option>Población femenina</option>
-                                <option>Población masculina</option>
-                                <option>Población infantil</option>
-                                <option>Adultos mayores</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-primary w-100">
-                            <i class="fas fa-search me-2"></i>Actualizar Mapa
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mapa Principal -->
-            <div class="col-lg-9">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fas fa-map-marked-alt text-primary me-2"></i>
-                                Mapa de Impacto Poblacional por Actividad Sísmica
-                            </h5>
-                            <div>
-                                <button class="btn btn-sm btn-outline-primary me-2">
-                                    <i class="fas fa-download me-1"></i>Exportar
-                                </button>
-                                <button class="btn btn-sm btn-primary">
-                                    <i class="fas fa-expand-arrows-alt me-1"></i>Pantalla Completa
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div id="poblacionMap" class="map-container"></div>
-                    </div>
-                </div>
-
-                <!-- Tarjetas de Análisis -->
-                <div class="row mt-4">
-                    <div class="col-md-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
-                                <h5 class="mt-3">Población en Alto Riesgo</h5>
-                                <h3 class="text-danger">44.5M</h3>
-                                <p class="text-muted">habitantes en zonas de alta actividad sísmica</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-shield-alt text-success" style="font-size: 2rem;"></i>
-                                <h5 class="mt-3">Población Protegida</h5>
-                                <h3 class="text-success">47M</h3>
-                                <p class="text-muted">habitantes en zonas de bajo riesgo sísmico</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-balance-scale text-warning" style="font-size: 2rem;"></i>
-                                <h5 class="mt-3">Riesgo Moderado</h5>
-                                <h3 class="text-warning">35.5M</h3>
-                                <p class="text-muted">habitantes en zonas de riesgo moderado</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group" role="group">
+                <button id="btnExportar" class="btn export-btn">
+                    <i class="fas fa-download me-1"></i>Exportar
+                </button>
+                <button id="btnPantallaCompleta" class="btn export-btn ms-2">
+                    <i class="fas fa-expand me-1"></i>Pantalla Completa
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Inicializar mapa
-        const map = L.map('poblacionMap').setView([23.6345, -102.5528], 5);
+    <div class="row">
+        <div class="col-lg-9">
+            <!-- Mapa principal -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marked-alt me-2"></i>
+                        Mapa de Impacto Poblacional por Actividad Sísmica
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" class="position-relative">
+                        <!-- El mapa se carga aquí -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Métricas de impacto -->
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="metric-card danger-zone">
+                        <div class="metric-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="big-number" id="poblacionAltoRiesgo">44.5M</h3>
+                        <p class="mb-0">Población en Alto Riesgo</p>
+                        <small>habitantes en zonas de alta actividad sísmica</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card safe-zone">
+                        <div class="metric-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="big-number" id="poblacionProtegida">47M</h3>
+                        <p class="mb-0">Población Protegida</p>
+                        <small>habitantes en zonas de bajo riesgo sísmico</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card moderate-zone">
+                        <div class="metric-icon">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <h3 class="big-number" id="riesgoModerado">35.5M</h3>
+                        <p class="mb-0">Riesgo Moderado</p>
+                        <small>habitantes en zonas de riesgo moderado</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3">
+            <!-- Estadísticas Poblacionales -->
+            <div class="stats-card">
+                <h5><i class="fas fa-chart-bar me-2"></i>Estadísticas Poblacionales</h5>
+                <div class="big-number" id="poblacionTotal">127M</div>
+                <p class="mb-3">Población Total Analizada</p>
+                
+                <div class="mt-3">
+                    <small class="text-light">Estados analizados: <strong id="estadosAnalizados">32</strong></small>
+                </div>
+            </div>
 
-        // Agregar tiles del mapa
+            <!-- Estados de Alto Riesgo -->
+            <div class="risk-card">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Estados de Alto Riesgo:</h6>
+                <div class="mt-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color" style="background-color: #dc3545; width: 12px; height: 12px;"></div>
+                        <span class="ms-2">Oaxaca: 4.1M habitantes</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color" style="background-color: #fd7e14; width: 12px; height: 12px;"></div>
+                        <span class="ms-2">Guerrero: 3.5M habitantes</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="legend-color" style="background-color: #ffc107; width: 12px; height: 12px;"></div>
+                        <span class="ms-2">Chiapas: 5.5M habitantes</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-color" style="background-color: #17a2b8; width: 12px; height: 12px;"></div>
+                        <span class="ms-2">Michoacán: 4.7M habitantes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribución del Riesgo Poblacional -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6><i class="fas fa-chart-pie me-2"></i>Población en Zonas Sísmicas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Alto Riesgo: <strong id="altoRiesgoPorcentaje">35%</strong></label>
+                        <div class="progress progress-custom mb-2">
+                            <div id="altoRiesgoBar" class="progress-bar bg-danger progress-bar-custom" style="width: 35%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Riesgo Moderado: <strong id="moderadoRiesgoPorcentaje">28%</strong></label>
+                        <div class="progress progress-custom mb-2">
+                            <div id="moderadoRiesgoBar" class="progress-bar bg-warning progress-bar-custom" style="width: 28%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Bajo Riesgo: <strong id="bajoRiesgoPorcentaje">37%</strong></label>
+                        <div class="progress progress-custom">
+                            <div id="bajoRiesgoBar" class="progress-bar bg-success progress-bar-custom" style="width: 37%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros de Análisis -->
+            <div class="filter-card">
+                <h6><i class="fas fa-sliders-h me-2"></i>Filtros de Análisis</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">Densidad Poblacional</label>
+                    <select class="form-select" id="densidadSelect">
+                        <option value="">Todas las densidades</option>
+                        <option value="muy-alta">Muy Alta (>500 hab/km²)</option>
+                        <option value="alta">Alta (200-500 hab/km²)</option>
+                        <option value="media">Media (50-200 hab/km²)</option>
+                        <option value="baja">Baja (<50 hab/km²)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Nivel de Riesgo Sísmico</label>
+                    <select class="form-select" id="riesgoSelect">
+                        <option value="">Todos los niveles</option>
+                        <option value="alto">Alto Riesgo</option>
+                        <option value="moderado">Riesgo Moderado</option>
+                        <option value="bajo">Bajo Riesgo</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Filtrar por Estado</label>
+                    <select class="form-select" id="estadoSelect">
+                        <option value="">Todos los estados</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Grupo Poblacional</label>
+                    <select class="form-select" id="grupoSelect">
+                        <option value="">Población total</option>
+                        <option value="infantil">Población infantil (0-14 años)</option>
+                        <option value="adulta">Población adulta (15-64 años)</option>
+                        <option value="mayor">Población mayor (65+ años)</option>
+                        <option value="vulnerable">Grupos vulnerables</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Población mínima (millones)</label>
+                    <input type="range" class="form-range" id="poblacionRange" 
+                           min="0" max="20" step="0.5" value="0">
+                    <div class="d-flex justify-content-between">
+                        <span>0M</span>
+                        <span id="poblacionValue">0M+</span>
+                        <span>20M</span>
+                    </div>
+                </div>
+
+                <button id="actualizarMapa" class="btn btn-light w-100">
+                    <i class="fas fa-sync-alt me-2"></i>Actualizar Mapa
+                </button>
+            </div>
+
+            <!-- Lista de Estados -->
+            <div class="card mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6><i class="fas fa-map-marker-alt me-2"></i>Análisis por Estado</h6>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div id="estadosLista">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando estados...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leyenda -->
+            <div class="card mt-4">
+                <div class="card-header bg-dark text-white">
+                    <h6><strong>Nivel de Riesgo Sísmico</strong></h6>
+                </div>
+                <div class="card-body">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #dc3545;"></div>
+                        <span>Alto Riesgo</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffc107;"></div>
+                        <span>Riesgo Moderado</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #28a745;"></div>
+                        <span>Bajo Riesgo</span>
+                    </div>
+                    <small class="text-muted">El tamaño indica la población total</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Datos poblacionales completos con análisis de riesgo sísmico
+    const datosPoblacionales = {
+        'Aguascalientes': { poblacion: 1.425, densidad: 'alta', riesgo: 'moderado', vulnerables: 0.285, urbana: 1.140, rural: 0.285 },
+        'Baja California': { poblacion: 3.769, densidad: 'media', riesgo: 'moderado', vulnerables: 0.754, urbana: 3.392, rural: 0.377 },
+        'Baja California Sur': { poblacion: 0.798, densidad: 'baja', riesgo: 'bajo', vulnerables: 0.160, urbana: 0.678, rural: 0.120 },
+        'Campeche': { poblacion: 0.928, densidad: 'baja', riesgo: 'bajo', vulnerables: 0.186, urbana: 0.669, rural: 0.259 },
+        'Coahuila': { poblacion: 3.146, densidad: 'baja', riesgo: 'bajo', vulnerables: 0.629, urbana: 2.674, rural: 0.472 },
+        'Colima': { poblacion: 0.731, densidad: 'alta', riesgo: 'alto', vulnerables: 0.146, urbana: 0.628, rural: 0.103 },
+        'Chiapas': { poblacion: 5.543, densidad: 'media', riesgo: 'alto', vulnerables: 1.109, urbana: 2.772, rural: 2.771 },
+        'Chihuahua': { poblacion: 3.741, densidad: 'baja', riesgo: 'moderado', vulnerables: 0.748, urbana: 2.993, rural: 0.748 },
+        'Ciudad de Mexico': { poblacion: 9.209, densidad: 'muy-alta', riesgo: 'alto', vulnerables: 1.842, urbana: 9.209, rural: 0.000 },
+        'Durango': { poblacion: 1.832, densidad: 'baja', riesgo: 'moderado', vulnerables: 0.366, urbana: 1.282, rural: 0.550 },
+        'Guanajuato': { poblacion: 6.166, densidad: 'alta', riesgo: 'moderado', vulnerables: 1.233, urbana: 4.936, rural: 1.230 },
+        'Guerrero': { poblacion: 3.540, densidad: 'media', riesgo: 'alto', vulnerables: 0.708, urbana: 2.124, rural: 1.416 },
+        'Hidalgo': { poblacion: 3.082, densidad: 'alta', riesgo: 'moderado', vulnerables: 0.616, urbana: 2.158, rural: 0.924 },
+        'Jalisco': { poblacion: 8.348, densidad: 'alta', riesgo: 'alto', vulnerables: 1.670, urbana: 7.179, rural: 1.169 },
+        'Mexico': { poblacion: 16.992, densidad: 'muy-alta', riesgo: 'alto', vulnerables: 3.398, urbana: 15.293, rural: 1.699 },
+        'Michoacan': { poblacion: 4.749, densidad: 'media', riesgo: 'alto', vulnerables: 0.950, urbana: 3.324, rural: 1.425 },
+        'Morelos': { poblacion: 1.971, densidad: 'muy-alta', riesgo: 'alto', vulnerables: 0.394, urbana: 1.675, rural: 0.296 },
+        'Nayarit': { poblacion: 1.235, densidad: 'media', riesgo: 'moderado', vulnerables: 0.247, urbana: 0.864, rural: 0.371 },
+        'Nuevo Leon': { poblacion: 5.784, densidad: 'media', riesgo: 'moderado', vulnerables: 1.157, urbana: 5.497, rural: 0.287 },
+        'Oaxaca': { poblacion: 4.132, densidad: 'media', riesgo: 'alto', vulnerables: 0.826, urbana: 2.066, rural: 2.066 },
+        'Puebla': { poblacion: 6.583, densidad: 'alta', riesgo: 'alto', vulnerables: 1.317, urbana: 4.607, rural: 1.976 },
+        'Queretaro': { poblacion: 2.368, densidad: 'alta', riesgo: 'moderado', vulnerables: 0.474, urbana: 2.132, rural: 0.236 },
+        'Quintana Roo': { poblacion: 1.858, densidad: 'media', riesgo: 'bajo', vulnerables: 0.372, urbana: 1.672, rural: 0.186 },
+        'San Luis Potosi': { poblacion: 2.822, densidad: 'media', riesgo: 'moderado', vulnerables: 0.564, urbana: 1.975, rural: 0.847 },
+        'Sinaloa': { poblacion: 3.026, densidad: 'media', riesgo: 'moderado', vulnerables: 0.605, urbana: 2.421, rural: 0.605 },
+        'Sonora': { poblacion: 2.944, densidad: 'baja', riesgo: 'moderado', vulnerables: 0.589, urbana: 2.472, rural: 0.472 },
+        'Tabasco': { poblacion: 2.395, densidad: 'alta', riesgo: 'bajo', vulnerables: 0.479, urbana: 1.676, rural: 0.719 },
+        'Tamaulipas': { poblacion: 3.527, densidad: 'media', riesgo: 'moderado', vulnerables: 0.705, urbana: 3.174, rural: 0.353 },
+        'Tlaxcala': { poblacion: 1.342, densidad: 'muy-alta', riesgo: 'alto', vulnerables: 0.268, urbana: 1.074, rural: 0.268 },
+        'Veracruz': { poblacion: 8.062, densidad: 'alta', riesgo: 'moderado', vulnerables: 1.612, urbana: 5.644, rural: 2.418 },
+        'Yucatan': { poblacion: 2.320, densidad: 'media', riesgo: 'bajo', vulnerables: 0.464, urbana: 1.856, rural: 0.464 },
+        'Zacatecas': { poblacion: 1.622, densidad: 'baja', riesgo: 'bajo', vulnerables: 0.324, urbana: 1.135, rural: 0.487 }
+    };
+
+    // Coordenadas de todos los estados mexicanos
+    const coordenadasEstados = {
+        'Aguascalientes': [21.8853, -102.2916],
+        'Baja California': [30.8406, -115.2838],
+        'Baja California Sur': [26.0444, -111.6660],
+        'Campeche': [19.8301, -90.5349],
+        'Coahuila': [25.4232, -101.0053],
+        'Colima': [19.2452, -103.7240],
+        'Chiapas': [16.7569, -93.1292],
+        'Chihuahua': [28.6353, -106.0889],
+        'Ciudad de Mexico': [19.4326, -99.1332],
+        'Durango': [24.0277, -104.6532],
+        'Guanajuato': [21.0190, -101.2574],
+        'Guerrero': [17.4391, -99.5451],
+        'Hidalgo': [20.0911, -98.7624],
+        'Jalisco': [20.6595, -103.3494],
+        'Mexico': [19.3907, -99.5036],
+        'Michoacan': [19.5665, -101.7068],
+        'Morelos': [18.6813, -99.1013],
+        'Nayarit': [21.7514, -104.8455],
+        'Nuevo Leon': [25.5922, -99.9962],
+        'Oaxaca': [17.0732, -96.7266],
+        'Puebla': [19.0414, -98.2063],
+        'Queretaro': [20.5888, -100.3899],
+        'Quintana Roo': [19.1817, -88.4791],
+        'San Luis Potosi': [22.1565, -100.9855],
+        'Sinaloa': [24.8069, -107.4458],
+        'Sonora': [29.2972, -110.3309],
+        'Tabasco': [17.8409, -92.6189],
+        'Tamaulipas': [23.7369, -99.1411],
+        'Tlaxcala': [19.3139, -98.2404],
+        'Veracruz': [19.1738, -96.1342],
+        'Yucatan': [20.7099, -89.0943],
+        'Zacatecas': [22.7709, -102.5832]
+    };
+
+    // Variables globales
+    let map;
+    let markersLayer;
+    let estadosFiltrados = Object.keys(datosPoblacionales);
+    let filtros = {
+        poblacionMinima: 0,
+        densidad: '',
+        riesgo: '',
+        estado: '',
+        grupo: ''
+    };
+
+    // Inicializar el mapa
+    function initMap() {
+        map = L.map('map').setView([23.6345, -102.5528], 5);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Datos simulados de población por estado
-        const poblacionData = [
-            { nombre: 'Oaxaca', lat: 17.0732, lng: -96.7266, poblacion: 4100000, riesgo: 'alto' },
-            { nombre: 'Guerrero', lat: 17.4391, lng: -99.5451, poblacion: 3500000, riesgo: 'alto' },
-            { nombre: 'Chiapas', lat: 16.7569, lng: -93.1292, poblacion: 5500000, riesgo: 'moderado' },
-            { nombre: 'Michoacán', lat: 19.5665, lng: -101.7068, poblacion: 4700000, riesgo: 'moderado' },
-            { nombre: 'Ciudad de México', lat: 19.4326, lng: -99.1332, poblacion: 9200000, riesgo: 'moderado' },
-            { nombre: 'Jalisco', lat: 20.6595, lng: -103.3494, poblacion: 8200000, riesgo: 'bajo' },
-            { nombre: 'Puebla', lat: 19.0414, lng: -98.2063, poblacion: 6200000, riesgo: 'moderado' },
-            { nombre: 'Veracruz', lat: 19.1738, lng: -96.1342, poblacion: 8100000, riesgo: 'bajo' }
-        ];
+        markersLayer = L.layerGroup().addTo(map);
+    }
 
-        // Función para obtener color según el riesgo
-        function getColor(riesgo) {
-            switch(riesgo) {
-                case 'alto': return '#e74c3c';
-                case 'moderado': return '#f39c12';
-                case 'bajo': return '#27ae60';
-                default: return '#95a5a6';
-            }
+    // Función para obtener el color según el riesgo sísmico
+    function getColorRiesgo(riesgo) {
+        switch(riesgo) {
+            case 'alto': return '#dc3545';     // Rojo
+            case 'moderado': return '#ffc107'; // Amarillo
+            case 'bajo': return '#28a745';     // Verde
+            default: return '#6c757d';         // Gris
         }
+    }
 
-        // Función para obtener el tamaño del marcador según la población
-        function getRadius(poblacion) {
-            return Math.sqrt(poblacion / 100000) * 5;
-        }
+    // Función para obtener el tamaño del marcador según la población
+    function getSizePoblacion(poblacion) {
+        if (poblacion >= 15) return 35;      // Muy grande (CDMX, Estado de México)
+        if (poblacion >= 8) return 30;       // Grande (Jalisco, Veracruz)
+        if (poblacion >= 5) return 25;       // Medio-grande (Puebla, Guanajuato)
+        if (poblacion >= 3) return 20;       // Medio (Nuevo León, Chihuahua)
+        if (poblacion >= 1.5) return 15;     // Pequeño-medio
+        return 10;                           // Pequeño
+    }
 
-        // Agregar marcadores de población
-        poblacionData.forEach(function(estado) {
-            const radius = getRadius(estado.poblacion);
-            const color = getColor(estado.riesgo);
+    // Función para obtener descripción de riesgo
+    function getDescripcionRiesgo(riesgo) {
+        const descripciones = {
+            'alto': { nivel: 'ALTO RIESGO', clase: 'danger', descripcion: 'Zona de alta actividad sísmica' },
+            'moderado': { nivel: 'RIESGO MODERADO', clase: 'warning', descripcion: 'Actividad sísmica moderada' },
+            'bajo': { nivel: 'BAJO RIESGO', clase: 'success', descripcion: 'Zona de baja actividad sísmica' }
+        };
+        return descripciones[riesgo] || { nivel: 'DESCONOCIDO', clase: 'secondary', descripcion: 'Sin datos' };
+    }
+
+    // Función para cargar y actualizar marcadores
+    function actualizarMarcadores() {
+        markersLayer.clearLayers();
+
+        // Aplicar filtros
+        const estadosAMostrar = Object.keys(datosPoblacionales).filter(estado => {
+            const datos = datosPoblacionales[estado];
             
-            const circle = L.circleMarker([estado.lat, estado.lng], {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.6,
-                radius: radius,
-                weight: 2
-            }).addTo(map);
-
-            // Popup con información
-            circle.bindPopup(`
-                <div class="text-center">
-                    <h6><strong>${estado.nombre}</strong></h6>
-                    <p class="mb-1"><i class="fas fa-users"></i> Población: ${(estado.poblacion / 1000000).toFixed(1)}M</p>
-                    <p class="mb-1"><i class="fas fa-exclamation-triangle"></i> Riesgo: ${estado.riesgo}</p>
-                    <span class="badge" style="background-color: ${color};">${estado.riesgo.toUpperCase()}</span>
-                </div>
-            `);
+            // Filtro por población mínima
+            if (datos.poblacion < filtros.poblacionMinima) return false;
+            
+            // Filtro por densidad
+            if (filtros.densidad && datos.densidad !== filtros.densidad) return false;
+            
+            // Filtro por riesgo
+            if (filtros.riesgo && datos.riesgo !== filtros.riesgo) return false;
+            
+            // Filtro por estado específico
+            if (filtros.estado && estado !== filtros.estado) return false;
+            
+            return true;
         });
 
-        // Leyenda del mapa
-        const legend = L.control({position: 'bottomright'});
-        legend.onAdd = function (map) {
-            const div = L.DomUtil.create('div', 'info legend');
-            div.style.backgroundColor = 'white';
-            div.style.padding = '10px';
-            div.style.borderRadius = '5px';
-            div.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        estadosFiltrados = estadosAMostrar;
+
+        // Añadir marcadores al mapa
+        estadosAMostrar.forEach(estado => {
+            const datos = datosPoblacionales[estado];
+            const coordenadas = coordenadasEstados[estado];
             
-            div.innerHTML = `
-                <h6><strong>Nivel de Riesgo Sísmico</strong></h6>
-                <i style="background: #e74c3c; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> Alto Riesgo<br>
-                <i style="background: #f39c12; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> Riesgo Moderado<br>
-                <i style="background: #27ae60; width: 18px; height: 18px; display: inline-block; border-radius: 50%; margin-right: 8px;"></i> Bajo Riesgo<br>
-                <small>El tamaño indica la población total</small>
-            `;
-            return div;
+            if (coordenadas) {
+                const riesgo = getDescripcionRiesgo(datos.riesgo);
+                
+                const circle = L.circleMarker(coordenadas, {
+                    radius: getSizePoblacion(datos.poblacion),
+                    fillColor: getColorRiesgo(datos.riesgo),
+                    color: '#000',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.7
+                });
+
+                const popupContent = `
+                    <div class="text-center">
+                        <h6><strong>${estado}</strong></h6>
+                        <div class="mb-2">
+                            <span class="badge bg-${riesgo.clase} fs-6">${riesgo.nivel}</span>
+                        </div>
+                        <div class="text-start">
+                            <p class="mb-1">
+                                <i class="fas fa-users text-primary"></i> 
+                                <strong>Población Total:</strong> ${datos.poblacion.toFixed(1)}M habitantes
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-city text-success"></i> 
+                                <strong>Población Urbana:</strong> ${datos.urbana.toFixed(1)}M
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-tree text-info"></i> 
+                                <strong>Población Rural:</strong> ${datos.rural.toFixed(1)}M
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-exclamation-triangle text-warning"></i> 
+                                <strong>Población Vulnerable:</strong> ${datos.vulnerables.toFixed(1)}M
+                            </p>
+                            <p class="mb-1">
+                                <i class="fas fa-chart-bar text-secondary"></i> 
+                                <strong>Densidad:</strong> ${getDensidadTexto(datos.densidad)}
+                            </p>
+                            <p class="mb-0">
+                                <i class="fas fa-shield-alt text-${riesgo.clase}"></i> 
+                                <strong>Riesgo Sísmico:</strong> ${riesgo.nivel}
+                            </p>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="centrarEnEstado('${estado}')">
+                                <i class="fas fa-crosshairs"></i> Centrar
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="filtrarPorEstado('${estado}')">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                circle.bindPopup(popupContent, { maxWidth: 350 });
+                markersLayer.addLayer(circle);
+                
+                // Tooltip al hacer hover
+                circle.on('mouseover', function() {
+                    this.bindTooltip(`${estado}: ${datos.poblacion.toFixed(1)}M habitantes`, {
+                        permanent: false,
+                        direction: 'top'
+                    }).openTooltip();
+                });
+            }
+        });
+
+        // Actualizar estadísticas
+        actualizarEstadisticas();
+        generarListaEstados();
+        mostrarFiltroActivo();
+    }
+
+    // Función para obtener texto de densidad
+    function getDensidadTexto(densidad) {
+        const textos = {
+            'muy-alta': 'Muy Alta (>500 hab/km²)',
+            'alta': 'Alta (200-500 hab/km²)',
+            'media': 'Media (50-200 hab/km²)',
+            'baja': 'Baja (<50 hab/km²)'
         };
-        legend.addTo(map);
-    </script>
+        return textos[densidad] || 'Desconocida';
+    }
+
+    // Función para poblar el select de estados
+    function poblarSelectEstados() {
+        const estadoSelect = document.getElementById('estadoSelect');
+        const estados = Object.keys(datosPoblacionales).sort();
+        
+        estadoSelect.innerHTML = '<option value="">Todos los estados</option>';
+        
+        estados.forEach(estado => {
+            const option = document.createElement('option');
+            option.value = estado;
+            option.textContent = estado;
+            estadoSelect.appendChild(option);
+        });
+    }
+
+    // Función para generar lista de estados
+    function generarListaEstados() {
+        const listaContainer = document.getElementById('estadosLista');
+        listaContainer.innerHTML = '';
+
+        // Ordenar estados por población descendente
+        const estadosOrdenados = estadosFiltrados
+            .sort((a, b) => datosPoblacionales[b].poblacion - datosPoblacionales[a].poblacion);
+
+        if (estadosOrdenados.length === 0) {
+            listaContainer.innerHTML = '<p class="text-muted text-center">No hay estados que mostrar</p>';
+            return;
+        }
+
+        estadosOrdenados.forEach(estado => {
+            const datos = datosPoblacionales[estado];
+            const riesgo = getDescripcionRiesgo(datos.riesgo);
+            const isSelected = filtros.estado === estado;
+            
+            const estadoCard = document.createElement('div');
+            estadoCard.className = `estado-item riesgo-${datos.riesgo} ${isSelected ? 'selected' : ''}`;
+            estadoCard.onclick = () => filtrarPorEstado(estado);
+            
+            estadoCard.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${estado}</strong>
+                        <br>
+                        <small class="text-${riesgo.clase}">
+                            <i class="fas fa-circle me-1"></i>${riesgo.nivel}
+                        </small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">${datos.poblacion.toFixed(1)}M</span>
+                        <br>
+                        <small class="text-muted">habitantes</small>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">Urbana</small>
+                            <br>
+                            <strong>${datos.urbana.toFixed(1)}M</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Rural</small>
+                            <br>
+                            <strong>${datos.rural.toFixed(1)}M</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Vulnerable</small>
+                            <br>
+                            <strong>${datos.vulnerables.toFixed(1)}M</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            listaContainer.appendChild(estadoCard);
+        });
+    }
+
+    // Función para actualizar estadísticas generales
+    function actualizarEstadisticas() {
+        const totalPoblacion = estadosFiltrados.reduce((sum, estado) => sum + datosPoblacionales[estado].poblacion, 0);
+        const poblacionPorRiesgo = {
+            alto: 0,
+            moderado: 0,
+            bajo: 0
+        };
+
+        estadosFiltrados.forEach(estado => {
+            poblacionPorRiesgo[datosPoblacionales[estado].riesgo] += datosPoblacionales[estado].poblacion;
+        });
+
+        // Actualizar UI
+        document.getElementById('poblacionTotal').textContent = `${totalPoblacion.toFixed(0)}M`;
+        document.getElementById('estadosAnalizados').textContent = estadosFiltrados.length;
+        document.getElementById('poblacionAltoRiesgo').textContent = `${poblacionPorRiesgo.alto.toFixed(1)}M`;
+        document.getElementById('poblacionProtegida').textContent = `${poblacionPorRiesgo.bajo.toFixed(0)}M`;
+        document.getElementById('riesgoModerado').textContent = `${poblacionPorRiesgo.moderado.toFixed(1)}M`;
+        
+        // Actualizar barras de riesgo
+        const altoRiesgoPorcentaje = (poblacionPorRiesgo.alto / totalPoblacion * 100);
+        const moderadoRiesgoPorcentaje = (poblacionPorRiesgo.moderado / totalPoblacion * 100);
+        const bajoRiesgoPorcentaje = (poblacionPorRiesgo.bajo / totalPoblacion * 100);
+        
+        document.getElementById('altoRiesgoPorcentaje').textContent = `${altoRiesgoPorcentaje.toFixed(0)}%`;
+        document.getElementById('moderadoRiesgoPorcentaje').textContent = `${moderadoRiesgoPorcentaje.toFixed(0)}%`;
+        document.getElementById('bajoRiesgoPorcentaje').textContent = `${bajoRiesgoPorcentaje.toFixed(0)}%`;
+        
+        document.getElementById('altoRiesgoBar').style.width = `${altoRiesgoPorcentaje}%`;
+        document.getElementById('moderadoRiesgoBar').style.width = `${moderadoRiesgoPorcentaje}%`;
+        document.getElementById('bajoRiesgoBar').style.width = `${bajoRiesgoPorcentaje}%`;
+    }
+
+    // Función para filtrar por estado
+    function filtrarPorEstado(estado) {
+        if (filtros.estado === estado) {
+            filtros.estado = '';
+        } else {
+            filtros.estado = estado;
+        }
+        
+        document.getElementById('estadoSelect').value = filtros.estado;
+        actualizarMarcadores();
+        mostrarExito(filtros.estado ? `Filtrado por: ${estado}` : `Filtro removido: ${estado}`);
+    }
+
+    // Función para centrar en estado
+    function centrarEnEstado(estado) {
+        const coordenadas = coordenadasEstados[estado];
+        if (coordenadas) {
+            map.setView(coordenadas, 8);
+            mostrarExito(`Centrado en ${estado}`);
+        }
+    }
+
+    // Función para mostrar filtro activo
+    function mostrarFiltroActivo() {
+        const filtroActivo = document.getElementById('filtroActivo');
+        const filtroTexto = document.getElementById('filtroTexto');
+        
+        const filtrosTexto = [];
+        if (filtros.estado) filtrosTexto.push(`Estado: ${filtros.estado}`);
+        if (filtros.poblacionMinima > 0) filtrosTexto.push(`Población ≥ ${filtros.poblacionMinima}M`);
+        if (filtros.densidad) filtrosTexto.push(`Densidad: ${filtros.densidad}`);
+        if (filtros.riesgo) filtrosTexto.push(`Riesgo: ${filtros.riesgo}`);
+        if (filtros.grupo) filtrosTexto.push(`Grupo: ${filtros.grupo}`);
+        
+        if (filtrosTexto.length > 0) {
+            filtroTexto.textContent = filtrosTexto.join(', ');
+            filtroActivo.style.display = 'block';
+        } else {
+            filtroActivo.style.display = 'none';
+        }
+    }
+
+    // Función para limpiar filtros
+    function limpiarFiltros() {
+        filtros = {
+            poblacionMinima: 0,
+            densidad: '',
+            riesgo: '',
+            estado: '',
+            grupo: ''
+        };
+        
+        // Reiniciar controles
+        document.getElementById('poblacionRange').value = 0;
+        document.getElementById('poblacionValue').textContent = '0M+';
+        document.getElementById('densidadSelect').value = '';
+        document.getElementById('riesgoSelect').value = '';
+        document.getElementById('estadoSelect').value = '';
+        document.getElementById('grupoSelect').value = '';
+        
+        actualizarMarcadores();
+        mostrarExito('Todos los filtros han sido reiniciados');
+    }
+
+    // Función para exportar datos
+    function exportarDatos() {
+        mostrarSpinner(true);
+        
+        try {
+            let csvContent = "Estado,Poblacion Total (Millones),Poblacion Urbana,Poblacion Rural,Poblacion Vulnerable,Densidad,Riesgo Sismico\n";
+            
+            estadosFiltrados.forEach(estado => {
+                const datos = datosPoblacionales[estado];
+                csvContent += `"${estado}","${datos.poblacion}","${datos.urbana}","${datos.rural}","${datos.vulnerables}","${datos.densidad}","${datos.riesgo}"\n`;
+            });
+
+            // Crear y descargar archivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `poblacion_impacto_sismico_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            mostrarExito(`Datos exportados: ${estadosFiltrados.length} estados`);
+        } catch (error) {
+            mostrarError('Error al exportar datos: ' + error.message);
+        } finally {
+            mostrarSpinner(false);
+        }
+    }
+
+    // Función para pantalla completa
+    function togglePantallaCompleta() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().then(() => {
+                mostrarExito('Modo pantalla completa activado');
+            });
+        } else {
+            document.exitFullscreen().then(() => {
+                mostrarExito('Modo pantalla completa desactivado');
+            });
+        }
+    }
+
+    // Funciones auxiliares
+    function mostrarSpinner(mostrar) {
+        const spinner = document.getElementById('loadingSpinner');
+        spinner.style.display = mostrar ? 'block' : 'none';
+    }
+
+    function mostrarError(mensaje) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+        errorDiv.style.zIndex = '9999';
+        errorDiv.style.marginTop = '20px';
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    }
+
+    function mostrarExito(mensaje) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x';
+        successDiv.style.zIndex = '9999';
+        successDiv.style.marginTop = '20px';
+        successDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.parentNode.removeChild(successDiv);
+            }
+        }, 3000);
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar mapa
+        initMap();
+        
+        // Poblar controles
+        poblarSelectEstados();
+        
+        // Cargar datos iniciales
+        actualizarMarcadores();
+
+        // Slider de población
+        const poblacionRange = document.getElementById('poblacionRange');
+        const poblacionValue = document.getElementById('poblacionValue');
+
+        poblacionRange.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            poblacionValue.textContent = value === 0 ? '0M+' : `${value}M+`;
+        });
+
+        // Botón actualizar mapa
+        document.getElementById('actualizarMapa').addEventListener('click', function() {
+            filtros.poblacionMinima = parseFloat(poblacionRange.value);
+            filtros.densidad = document.getElementById('densidadSelect').value;
+            filtros.riesgo = document.getElementById('riesgoSelect').value;
+            filtros.estado = document.getElementById('estadoSelect').value;
+            filtros.grupo = document.getElementById('grupoSelect').value;
+            
+            actualizarMarcadores();
+            mostrarExito('Mapa actualizado correctamente');
+        });
+
+        // Select de estados
+        document.getElementById('estadoSelect').addEventListener('change', function() {
+            filtros.estado = this.value;
+            actualizarMarcadores();
+            if (this.value) {
+                mostrarExito(`Filtrado por estado: ${this.value}`);
+            } else {
+                mostrarExito('Mostrando todos los estados');
+            }
+        });
+
+        // Botones de acción
+        document.getElementById('btnExportar').addEventListener('click', exportarDatos);
+        document.getElementById('btnPantallaCompleta').addEventListener('click', togglePantallaCompleta);
+        document.getElementById('btnVolver').addEventListener('click', function() {
+            window.history.back();
+        });
+    });
+</script>
+
 </body>
 </html>

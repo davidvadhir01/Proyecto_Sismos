@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acerca de SismoMex DataWarehouse</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-globe-americas me-2"></i>SismoMex
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Inicio</a>
+                <a class="nav-link" href="/mapa">Mapa</a>
+                <a class="nav-link" href="/mapas">DataWarehouse</a>
+                <a class="nav-link active" href="/about">Acerca de</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <!-- Header -->
+        <div class="row mb-5">
+            <div class="col-12 text-center">
+                <h1 class="display-4 mb-3">
+                    <i class="fas fa-info-circle text-primary me-3"></i>
+                    SismoMex DataWarehouse
+                </h1>
+                <p class="lead text-muted">
+                    Sistema integral de monitoreo sísmico y análisis de impacto poblacional y económico para México
+                </p>
+            </div>
+        </div>
+
+        <!-- Estado del Sistema -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="fas fa-database me-2"></i>Estado del Sistema</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Base de Datos de Sismos</span>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Activo
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>DataWarehouse</span>
+                            <span class="badge" th:classappend="${datawarehouseActivo ? 'bg-success' : 'bg-warning'}">
+                                <i th:class="${datawarehouseActivo ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'} + ' me-1'"></i>
+                                <span th:text="${datawarehouseActivo ? 'Operativo' : 'En desarrollo'}">Estado</span>
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Sistema de Mapas</span>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Activo
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>APIs REST</span>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Disponibles
+                            </span>
+                        </div>
+                        
+                        <hr>
+                        <p class="mb-0">
+                            <strong>Sismos registrados:</strong> 
+                            <span th:text="${totalSismosHistorico ?: 'N/A'}">N/A</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="fas fa-chart-line me-2"></i>Características del DataWarehouse</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-dollar-sign text-success me-2"></i>
+                                Evaluación de riesgo económico
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-map-marked-alt text-warning me-2"></i>
+                                Mapas de riesgo sísmico zonificado
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-tachometer-alt text-info me-2"></i>
+                                Análisis de distribución de magnitudes
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-broadcast-tower text-danger me-2"></i>
+                                Monitoreo en tiempo real
+                            </li>
+                            <li class="mb-0">
+                                <i class="fas fa-chart-bar text-secondary me-2"></i>
+                                Reportes y estadísticas avanzadas
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arquitectura del Sistema -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h3 class="mb-4"><i class="fas fa-sitemap text-primary me-2"></i>Arquitectura del Sistema</h3>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-database text-primary" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">Capa de Datos</h5>
+                                <p>MySQL con tablas optimizadas para sismos, dimensiones poblacionales, económicas y temporales.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-cogs text-success" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">Capa de Negocio</h5>
+                                <p>Spring Boot con servicios especializados para análisis sísmico y gestión del DataWarehouse.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-eye text-info" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">Capa de Presentación</h5>
+                                <p>Mapas interactivos con Leaflet, gráficos con Chart.js y interfaz responsiva.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fuentes de Datos -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h3 class="mb-4"><i class="fas fa-download text-primary me-2"></i>Fuentes de Datos</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-earthquake text-danger me-2"></i>Datos Sísmicos</h5>
+                        <ul>
+                            <li>Servicio Sismológico Nacional (SSN) - UNAM</li>
+                            <li>Red Sismográfica Nacional</li>
+                            <li>Catálogos históricos de sismos</li>
+                            <li>Datos de magnitud, ubicación y profundidad</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-chart-bar text-success me-2"></i>Datos Socioeconómicos</h5>
+                        <ul>
+                            <li>INEGI - Censo de Población y Vivienda</li>
+                            <li>INEGI - Datos económicos por estado</li>
+                            <li>Información de PIB y sectores productivos</li>
+                            <li>Densidad poblacional y demografía</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tecnologías Utilizadas -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h3 class="mb-4"><i class="fas fa-tools text-primary me-2"></i>Tecnologías</h3>
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6><i class="fas fa-server text-info me-2"></i>Backend</h6>
+                        <ul class="list-unstyled">
+                            <li>• Java 17</li>
+                            <li>• Spring Boot 3</li>
+                            <li>• Spring Data JPA</li>
+                            <li>• Spring Security</li>
+                            <li>• Maven</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><i class="fas fa-database text-warning me-2"></i>Base de Datos</h6>
+                        <ul class="list-unstyled">
+                            <li>• MySQL 8.0</li>
+                            <li>• HikariCP</li>
+                            <li>• Hibernate ORM</li>
+                            <li>• Índices optimizados</li>
+                            <li>• Vistas materializadas</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><i class="fas fa-laptop-code text-success me-2"></i>Frontend</h6>
+                        <ul class="list-unstyled">
+                            <li>• HTML5 / CSS3</li>
+                            <li>• Bootstrap 5</li>
+                            <li>• JavaScript ES6+</li>
+                            <li>• Leaflet Maps</li>
+                            <li>• Chart.js</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-3">
+                        <h6><i class="fas fa-cloud text-primary me-2"></i>Despliegue</h6>
+                        <ul class="list-unstyled">
+                            <li>• Docker & Docker Compose</li>
+                            <li>• Nginx (proxy)</li>
+                            <li>• SSL/TLS</li>
+                            <li>• Logs centralizados</li>
+                            <li>• Monitoreo 24/7</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- APIs Disponibles -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h3 class="mb-4"><i class="fas fa-plug text-primary me-2"></i>APIs REST Disponibles</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Método</th>
+                                <th>Descripción</th>
+                                <th>Parámetros</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>/api/sismos</code></td>
+                                <td><span class="badge bg-success">GET</span></td>
+                                <td>Obtener todos los sismos o filtrados por año</td>
+                                <td>year (opcional)</td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/sismos/estadisticas</code></td>
+                                <td><span class="badge bg-success">GET</span></td>
+                                <td>Estadísticas calculadas de sismos</td>
+                                <td>year (opcional)</td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/sismos/años</code></td>
+                                <td><span class="badge bg-success">GET</span></td>
+                                <td>Años disponibles para filtros</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td><code>/mapas/api/estadisticas-estados</code></td>
+                                <td><span class="badge bg-success">GET</span></td>
+                                <td>Estadísticas del DataWarehouse por estado</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td><code>/mapas/api/tendencia-temporal</code></td>
+                                <td><span class="badge bg-success">GET</span></td>
+                                <td>Tendencias temporales de actividad sísmica</td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navegación Rápida -->
+        <div class="row">
+            <div class="col-12">
+                <h3 class="mb-4"><i class="fas fa-compass text-primary me-2"></i>Navegación Rápida</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="list-group">
+                            <a href="/mapa" class="list-group-item list-group-item-action">
+                                <i class="fas fa-map-marked-alt text-primary me-2"></i>
+                                Mapa Principal de Sismos
+                            </a>
+                            <a href="/mapas" class="list-group-item list-group-item-action">
+                                <i class="fas fa-th-large text-success me-2"></i>
+                                Centro de Análisis DataWarehouse
+                            </a>
+                            <a href="/mapas/poblacion" class="list-group-item list-group-item-action">
+                                <i class="fas fa-users text-info me-2"></i>
+                                Análisis de Impacto Poblacional
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="list-group">
+                            <a href="/mapas/economia" class="list-group-item list-group-item-action">
+                                <i class="fas fa-dollar-sign text-success me-2"></i>
+                                Análisis de Impacto Económico
+                            </a>
+                            <a href="/mapas/riesgo-sismico" class="list-group-item list-group-item-action">
+                                <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                Mapa de Riesgo Sísmico
+                            </a>
+                            <a href="/mapas/tiempo-real" class="list-group-item list-group-item-action">
+                                <i class="fas fa-broadcast-tower text-warning me-2"></i>
+                                Monitoreo en Tiempo Real
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> fa-users text-primary me-2"></i>
+                                Análisis de impacto poblacional
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas
