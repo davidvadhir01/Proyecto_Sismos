@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   mysql:
     image: mysql:8.0
@@ -23,7 +25,7 @@ services:
     networks:
       - app-network
 
-  app:
+  springboot-app-sismos:
     build: .
     container_name: springboot-app-sismos
     restart: on-failure
@@ -33,6 +35,7 @@ services:
     ports:
       - "8082:8080"
     environment:
+      - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/sismos?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=admin
       - SPRING_DATASOURCE_PASSWORD=admin
