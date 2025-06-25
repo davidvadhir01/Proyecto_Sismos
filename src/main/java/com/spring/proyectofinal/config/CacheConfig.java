@@ -13,11 +13,20 @@ public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
         return new ConcurrentMapCacheManager(
+            // Caches existentes
             "availableYears",
             "estadisticasBasicas", 
             "estadosDisponibles",
             "sismosPorEstado",
-            "dataWarehouseStats"
+            "dataWarehouseStats",
+            
+            // Nuevos caches para los mapas
+            "datosSismicos",
+            "datosEconomicos", 
+            "datosPoblacionales",
+            "magnitudesAnalisis",
+            "eventosRecientes",
+            "estadisticasDashboard"
         );
     }
 }
