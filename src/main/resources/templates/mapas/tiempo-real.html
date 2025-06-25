@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoreo en Tiempo Real</title>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        document.addEventListener("DOMContentLoaded", function () {
+            const socket = new WebSocket('ws://localhost:8080/mapa');
+
+            socket.onmessage = function(event) {
+                if (event.data === 'mapa_actualizado') {
+                    alert("¡Nuevo sismo detectado!");
+                    location.reload(); // Recargar la página para mostrar nuevos datos
+                }
+            };
+
+            socket.onerror = function(err) {
+                console.error("Error en WebSocket:", err);
+            };
+        });
+        /*]]>*/
+    </script>
+</head>
+<body>
+    <h1>Monitoreo Sísmico en Tiempo Real</h1>
+
+    <p th:if="${sismosRecientes} != null and ${#lists.size(sismosRecientes)} > 0">
+        Últimos sismos registrados:
+        <ul>
+            <li th:each="sismo : ${sismosRecientes}">
+                Magnitud: <span th:text="${sismo.magnitud}"></span>,
+                Ubicación: <span th:text="${sismo.estado}"></span>
+            </li>
+        </ul>
+    </p>
+    <p th:if="${sismosRecientes} == null or ${#lists.isEmpty(sismosRecientes)}">
+        No hay registros recientes.
+    </p>
+</body>
+</html>

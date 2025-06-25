@@ -1,15 +1,19 @@
 // WebSocketConfig.java - Versión compatible
 package com.spring.proyectofinal.config;
 
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import com.spring.proyectofinal.controller.MapaWebSocketHandler;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 @Configuration
 @EnableWebSocketMessageBroker
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, WebSocketConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -27,4 +31,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns("*") // Cambié esto para evitar problemas CORS
                 .withSockJS();
     }
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(new MapaWebSocketHandler(), "/mapa")
+                 .setAllowedOrigins("*");
+    }
+
 }
