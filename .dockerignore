@@ -1,11 +1,13 @@
-.git
-.github
-.gitignore
-.idea
-.vscode
 target/
-*.iml
+!target/ProyectoFinal-*.jar
+.mvn/
 mvnw
 mvnw.cmd
-.mvn/
-README.md
+.vscode/
+.idea/
+*.iml
+.DS_Store
+.git/
+.gitignore
+Casos de uso.pdf
+Diccionario de Datos.pdf
