@@ -148,24 +148,24 @@ public class SismoApiController {
         }
     }
 
-
-    /****
-     * 
+    /**
      * 
      * Métodos para la implementación de abstracción de datos
-     * del twitter del Servicio Sismologico Nacional para
-     * el anexo de nuevos datos dentro de nuestro sistme web
+     * del twitter del Servicio Sismológico Nacional para
+     * el anexo de nuevos datos dentro de nuestro sistema web
      *  
      */
 
-    @Scheduled(fixedRate = 180000) // Cada 3 minutos
+    @Scheduled(fixedRate = 1800000) // Cada 15 minutos
     public void fetchAndSaveLatestSismosFromTwitter() {
         try {
-            List<Status> tweets = twitterUtil.getLatestTweets("SSNMexico", 5); // El usuario oficial del SSN
+            // Ahora usamos StatusMock en lugar de twitter4j.Status
+            List<TwitterUtil.StatusMock> tweets = twitterUtil.getLatestTweets("SSNMexico",10); // Usuario oficial del SSN
+
             List<Sismo> nuevosSismos = new ArrayList<>();
 
-            for (Status tweet : tweets) {
-                Sismo sismo = TweetParser.parseSismoFromTweet(tweet);
+            for (TwitterUtil.StatusMock tweet : tweets) {
+                Sismo sismo = TweetParser.parseSismoFromTweet(tweet); // Asegúrate de que este método acepte StatusMock
                 if (sismo != null) {
                     nuevosSismos.add(sismo);
                 }
@@ -176,42 +176,16 @@ public class SismoApiController {
                 notifyClientsAboutUpdate(); // Notifica a WebSocket
             }
 
+            System.out.println("ya estas aca en el jale de twets mi buen ");
+
         } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void checkTwitterApiLimits() {
-        try {
-            Twitter twitter = twitterUtil.getTwitterInstance();
-
-            // Obtiene todos los límites del grupo "statuses"
-            Map<String, RateLimitStatus> statusMap = twitter.getRateLimitStatus("statuses");
-
-            // Busca específicamente el endpoint user_timeline
-            RateLimitStatus status = statusMap.get("user_timeline");
-
-            if (status != null) {
-                int remaining = status.getRemaining();
-                int limit = status.getLimit();
-
-                System.out.println("Llamadas restantes hoy al endpoint user_timeline: " + remaining + "/" + limit);
-
-                if (remaining <= 10) {
-                    System.out.println("⚠️ Estás cerca del límite diario. Deteniendo nuevas llamadas.");
-                    // Aquí podrías deshabilitar temporalmente la tarea programada
-                }
-            } else {
-                System.out.println("No se pudo obtener información del límite para user_timeline");
-            }
-
-        } catch (TwitterException e) {
-            System.err.println("Error al verificar límites de API de Twitter");
+            System.err.println("Error al obtener o procesar los últimos sismos desde Twitter:");
             e.printStackTrace();
         }
     }
 
 
+    
     // === NOTIFICACIÓN VIA WEBSOCKET ===
     private void notifyClientsAboutUpdate() {
         // Suponiendo que tienes un handler de sesiones WebSocket
@@ -223,4 +197,5 @@ public class SismoApiController {
             }
         }
     }
+
 }
