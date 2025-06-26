@@ -2,6 +2,457 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoreo Sísmico en Tiempo Real</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            border-radius: 2px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 2px 2px 4px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.2); }
+            to { text-shadow: 2px 2px 4px rgba(0,0,0,0.3), 0 0 30px rgba(255,255,255,0.4); }
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .pulse {
+            width: 12px;
+            height: 12px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .seismic-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .seismic-item {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #667eea;
+            position: relative;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .seismic-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .magnitude {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-right: 10px;
+        }
+
+        .location {
+            color: #666;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        .no-data i {
+            font-size: 4rem;
+            color: #ddd;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .alert-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 350px;
+        }
+
+        .alert-notification.show {
+            transform: translateX(0);
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: scale(1.05);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+
+        /* Scrollbar personalizada */
+        .seismic-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .seismic-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .seismic-list::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .seismic-list::-webkit-scrollbar-thumb:hover {
+            background: #5a67d8;
+        }
+    </style>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        document.addEventListener("DOMContentLoaded", function () {
+            const socket = new WebSocket('ws://localhost:8080/mapa');
+
+            // Función para mostrar notificación personalizada
+            function showNotification() {
+                // Crear elemento de notificación
+                const notification = document.createElement('div');
+                notification.className = 'alert-notification';
+                notification.innerHTML = `
+                    <div class="alert-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>¡ALERTA SÍSMICA!</span>
+                    </div>
+                    <div>Nuevo sismo detectado. Actualizando información...</div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Mostrar notificación
+                setTimeout(() => notification.classList.add('show'), 100);
+                
+                // Ocultar después de 4 segundos
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => document.body.removeChild(notification), 300);
+                }, 4000);
+            }
+
+            socket.onmessage = function(event) {
+                if (event.data === 'mapa_actualizado') {
+                    showNotification();
+                    // Recargar después de mostrar la notificación
+                    setTimeout(() => location.reload(), 2000);
+                }
+            };
+
+            socket.onerror = function(err) {
+                console.error("Error en WebSocket:", err);
+            };
+
+            // Animación de entrada para los elementos
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.card').forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(card);
+            });
+        });
+        /*]]>*/
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-mountain"></i> Monitoreo Sísmico</h1>
+            <p style="font-size: 1.2rem; opacity: 0.9;">Sistema de Detección en Tiempo Real</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="pulse"></div>
+                <span>Sistema Activo</span>
+            </div>
+            <div class="status-indicator">
+                <i class="fas fa-wifi"></i>
+                <span>Conectado</span>
+            </div>
+            <div class="status-indicator">
+                <i class="fas fa-clock"></i>
+                <span id="current-time"></span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-list-alt"></i>
+                    </div>
+                    <div class="card-title">Últimos Registros</div>
+                </div>
+
+                <div th:if="${sismosRecientes} != null and ${#lists.size(sismosRecientes)} > 0">
+                    <ul class="seismic-list">
+                        <li th:each="sismo : ${sismosRecientes}" class="seismic-item">
+                            <span class="magnitude" th:text="${sismo.magnitud} + ' M'"></span>
+                            <span class="location" th:text="${sismo.estado}"></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div th:if="${sismosRecientes} == null or ${#lists.isEmpty(sismosRecientes)}" class="no-data">
+                    <i class="fas fa-search"></i>
+                    <div>No hay registros sísmicos recientes</div>
+                    <small style="color: #999; margin-top: 10px; display: block;">
+                        El sistema está monitoreando continuamente...
+                    </small>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #4CAF50, #45a049);">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="card-title">Estadísticas</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-number" th:text="${sismosRecientes != null ? #lists.size(sismosRecientes) : 0}">0</span>
+                        <div class="stat-label">Registros Totales</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">24/7</span>
+                        <div class="stat-label">Monitoreo Activo</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #e8f5e8, #f0f8f0); border-radius: 15px; text-align: center;">
+                    <i class="fas fa-shield-alt" style="color: #4CAF50; font-size: 2rem; margin-bottom: 10px;"></i>
+                    <div style="font-weight: 600; color: #2e7d32;">Sistema de Alerta Temprana</div>
+                    <small style="color: #666;">Protegiendo tu comunidad las 24 horas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Actualizar reloj en tiempo real
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>
+
+
+<!--<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
     <title>Monitoreo en Tiempo Real</title>
     <script th:inline="javascript">
         /*<![CDATA[*/
@@ -38,4 +489,51 @@
         No hay registros recientes.
     </p>
 </body>
-</html>
+</html>-->
+
+
+
+
+
+
+<!--<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoreo en Tiempo Real</title>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        document.addEventListener("DOMContentLoaded", function () {
+            const socket = new WebSocket('ws://localhost:8080/mapa');
+
+            socket.onmessage = function(event) {
+                if (event.data === 'mapa_actualizado') {
+                    alert("¡Nuevo sismo detectado!");
+                    location.reload(); // Recargar la página para mostrar nuevos datos
+                }
+            };
+
+            socket.onerror = function(err) {
+                console.error("Error en WebSocket:", err);
+            };
+        });
+        /*]]>*/
+    </script>
+</head>
+<body>
+    <h1>Monitoreo Sísmico en Tiempo Real</h1>
+
+    <p th:if="${sismosRecientes} != null and ${#lists.size(sismosRecientes)} > 0">
+        Últimos sismos registrados:
+        <ul>
+            <li th:each="sismo : ${sismosRecientes}">
+                Magnitud: <span th:text="${sismo.magnitud}"></span>,
+                Ubicación: <span th:text="${sismo.estado}"></span>
+            </li>
+        </ul>
+    </p>
+    <p th:if="${sismosRecientes} == null or ${#lists.isEmpty(sismosRecientes)}">
+        No hay registros recientes.
+    </p>
+</body>
+</html>-->
